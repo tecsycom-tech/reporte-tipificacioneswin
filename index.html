@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIN | Dashboard Comercial Call Center</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2312243a%22/%3E%3Ctext x=%2250%25%22 y=%2270%25%22 font-size=%2265%22 text-anchor=%22middle%22%3E%F0%9F%93%9E%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#152238;--muted:#69788d;--line:#e5eaf2;--navy:#12243a;--blue:#2563eb;--cyan:#0891b2;--green:#16a34a;--orange:#ea580c;--red:#dc2626}
+*{box-sizing:border-box}
+#loadingScreen{position:fixed;inset:0;z-index:9999;background:#102238;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#loadingScreen .loadicon{font-size:48px;margin-bottom:14px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+#loadingScreen p{color:#c5d5e4}
+body{margin:0;background:var(--bg);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#102238,#183f61);color:white;padding:25px clamp(16px,3vw,40px);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.upload input{display:none}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
+main{max-width:1500px;margin:auto;padding:22px clamp(12px,2.5vw,32px) 40px}
+#dashboardContent{display:none}
+.empty-state{background:var(--card);border:2px dashed var(--line);border-radius:16px;padding:60px 20px;text-align:center;max-width:600px;margin:60px auto}
+.empty-state h3{font-size:20px;margin:12px 0 6px;color:var(--navy)}
+.empty-state p{color:var(--muted);margin:0 0 20px}
+.filters{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr)) auto;gap:12px;background:var(--card);padding:16px;border:1px solid var(--line);border-radius:15px;box-shadow:0 3px 12px #203d5a08;margin-bottom:17px}
+label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}input,select{width:100%;min-width:0;border:1px solid #dbe3ee;background:#fff;padding:10px;border-radius:9px;color:var(--ink);font:inherit}.filterbtn{align-self:end;background:var(--navy);color:white;border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer}
+.sectionhead{display:flex;justify-content:space-between;gap:12px;align-items:end;margin:23px 0 12px;flex-wrap:wrap}.sectionhead h2{font-size:17px;margin:0;letter-spacing:-.02em}.sectionhead p{color:var(--muted);margin:3px 0 0;font-size:12px}.pill{border-radius:99px;padding:5px 9px;background:#e8f2ff;color:#2454a6;font-size:11px;font-weight:750}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.kpi,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 12px #203d5a08}.kpi{padding:16px;min-height:118px;position:relative;overflow:hidden}.kpi:after{content:"";position:absolute;right:-20px;top:-25px;width:80px;height:80px;border-radius:50%;background:var(--tint,#eaf2ff)}.kpi .label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.kpi .value{font-size:clamp(22px,2.1vw,30px);font-weight:850;letter-spacing:-.04em;margin:8px 0 4px;position:relative;z-index:1}.kpi .sub{font-size:11px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.panel{padding:17px;min-width:0}.panel h3{margin:0;font-size:14px}.charthead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.chartcount{font-size:11px;font-weight:800;color:#2454a6;background:#e8f2ff;border-radius:999px;padding:5px 9px;white-space:nowrap}.panel .desc{color:var(--muted);font-size:11px;margin:4px 0 13px}.chartbox{height:280px;position:relative}.chartbox.tall{height:340px}.chartbox.small{height:250px}.note{border:1px solid #f5d7a4;background:#fff9ed;color:#7a4b0b;border-radius:11px;padding:11px 13px;font-size:12px;margin-top:14px}
+.tablewrap{overflow:auto;height:440px;max-height:440px;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}th{position:sticky;top:0;background:#f2f6fb;color:#5b6b80;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;z-index:1}td,th{padding:10px 12px;border-bottom:1px solid var(--line)}tbody tr:hover{background:#f8fbff}.num{text-align:right;font-variant-numeric:tabular-nums}.empty{padding:25px;text-align:center;color:var(--muted)}.foot{color:var(--muted);font-size:11px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.update-badge{background:#10b98118;color:#047857;border:1px solid #10b98144;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+@media(max-width:1150px){.kpis{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.chartbox{height:260px}.header-actions{width:100%}}
+</style></head><body>
+<div id="loadingScreen"><div class="loadicon">📞</div><h2 id="loadingTitle">Cargando dashboard WIN</h2><p id="loadingMsg">Procesando datos…</p></div>
+<header>
+  <div class="brand">
+    <div class="logo" aria-label="Gestión comercial">📞</div>
+    <div>
+      <div class="eyebrow">☎ Inteligencia comercial</div>
+      <h1>Dashboard de Call Center</h1>
+      <p>Rendimiento · Contactabilidad · Conversión · Tipificaciones</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <label class="upload">📁 Cargar Excel<input type="file" id="fileInput" accept=".xlsx,.xls"></label>
+    <button class="syncbtn" id="syncBtn">🔄 Sincronizar Google Sheet</button>
+    <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
+  </div>
+</header>
+<main>
+<div id="emptyState" class="empty-state">
+  <div style="font-size:48px">📊</div>
+  <h3>Sin datos cargados</h3>
+  <p>Selecciona una opción en la parte superior para comenzar:</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button class="upload" onclick="document.getElementById('fileInput').click()">📁 Cargar archivo Excel</button>
+    <button class="syncbtn" onclick="syncGoogleSheet()">🔄 Sincronizar Google Sheet</button>
+  </div>
+</div>
+
+<div id="dashboardContent">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <span class="update-badge" id="lastUpdateLabel">🕒 Última actualización: --</span>
+  </div>
+  <div class="filters">
+    <div><label for="from">Fecha desde</label><input type="date" id="from"></div>
+    <div><label for="to">Fecha hasta</label><input type="date" id="to"></div>
+    <div><label for="agent">Agente</label><select id="agent"><option value="">Todos los agentes</option></select></div>
+    <div><label for="kind">Tipo de gestión</label><select id="kind"><option value="">Todos los tipos</option></select></div>
+    <div><label for="view">Universo de análisis</label><select id="view"><option value="all">Todas las gestiones</option><option value="human">Solo agentes humanos</option><option value="commercial">Gestiones comerciales (sin discador)</option><option value="contact">Solo contacto efectivo</option></select></div>
+    <button class="filterbtn" id="apply">Aplicar filtros</button>
+  </div>
+  <div class="sectionhead"><div><h2>Resumen ejecutivo</h2><p id="periodLabel">Periodo seleccionado</p></div><span class="pill" id="loadedLabel">Hoja Tipificacaciones_WIN</span></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="sectionhead"><div><h2>Resultados comerciales y operativos</h2><p>Porcentajes calculados sobre universos explícitos</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>📊 Distribución de tipificaciones</h3><span class="chartcount" id="tipChartCount">0 registros</span></div><p class="desc">Principales conceptos finales; excluye categorías vacías</p><div class="chartbox tall"><canvas id="tipChart"></canvas></div></section>
+    <section class="panel"><div class="charthead"><h3>🎯 Embudo comercial</h3><span class="chartcount" id="funnelChartCount">0 registros</span></div><p class="desc">Registros por resultado; no representa necesariamente clientes únicos</p><div class="chartbox tall"><canvas id="funnelChart"></canvas></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Productividad y evolución</h2><p>Comparación entre agentes y tendencia diaria</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>👥 Top agentes por gestiones comerciales</h3><span class="chartcount" id="agentChartCount">0 gestiones</span></div><p class="desc">No incluye al usuario técnico del discador</p><div class="chartbox"><canvas id="agentChart"></canvas></div></section>
+    <section class="panel"><div class="charthead"><h3>📈 Evolución diaria</h3><span class="chartcount" id="trendChartCount">0 registros</span></div><p class="desc">Registros, contactos efectivos y ventas por fecha</p><div class="chartbox"><canvas id="trendChart"></canvas></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Motivos y calidad de gestión</h2><p>Identifica barreras de contacto y oportunidades de mejora</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>🔎 Motivos frecuentes (Concepto4)</h3><span class="chartcount" id="reasonChartCount">0 registros</span></div><p class="desc">Top 10 del universo filtrado</p><div class="chartbox tall"><canvas id="reasonChart"></canvas></div></section>
+    <section class="panel"><h3>Resumen por tipificación</h3><p class="desc">Volumen y participación sobre los registros filtrados</p><div class="tablewrap" id="tipTable"></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Detalle de registros</h2><p>Detalle de la hoja Tipificacaciones_WIN · encabezados en mayúscula · todas las columnas originales</p></div><span class="pill" id="rowsLabel"></span></div>
+  <section class="panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input id="search" placeholder="Buscar en todas las columnas…" style="max-width:380px"><button class="filterbtn" id="exportAllBtn" style="align-self:auto">⬇ Exportar todas las columnas a Excel</button><span class="desc" id="detailCount" style="margin:0"></span><button class="filterbtn" id="prevPage" style="align-self:auto">← Anterior</button><span class="desc" id="pageLabel" style="margin:0">Página 1</span><button class="filterbtn" id="nextPage" style="align-self:auto">Siguiente →</button></div><div class="tablewrap" id="detailTable"></div></section>
+  <div class="note"><b>Nota metodológica:</b> un registro no equivale necesariamente a un cliente único. La tasa de contacto se calcula como Contacto Efectivo ÷ (Contacto Efectivo + Contacto No Efectivo + No contacto). La conversión usa Ventas tipificadas ÷ Contactos efectivos. Validar estos denominadores con la definición comercial oficial antes de usarlos como KPI contractual.</div>
+  <div class="foot"><span>WIN · Dashboard comercial de call center</span><span id="quality"></span></div>
+</div>
+</main>
+<script>
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
+const originalRowsMap = new WeakMap();
+let allRows = [];
+let filteredRows = [];
+let currentPage = 1;
+const pageSize = 50;
+
+let tipChartInstance = null;
+let funnelChartInstance = null;
+let agentChartInstance = null;
+let trendChartInstance = null;
+let reasonChartInstance = null;
+
+function showLoading(title, msg) {
+  document.getElementById('loadingTitle').innerText = title;
+  document.getElementById('loadingMsg').innerText = msg;
+  document.getElementById('loadingScreen').style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loadingScreen').style.display = 'none';
+}
+
+function updateLastUpdateLabel() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('lastUpdateLabel').innerText = `🕒 Última actualización: ${dateStr} ${timeStr}`;
+}
+
+function parseExcelDate(val) {
+  if (!val) return "";
+  if (typeof val === 'number') {
+    const d = XLSX.SSF.parse_date_code(val);
+    if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+    const parts = str.split('/');
+    return `${parts[2]}-${String(parts[0]).padStart(2,'0')}-${String(parts[1]).padStart(2,'0')}`;
+  }
+  return str;
+}
+
+function formatVal(v) {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
+function processLoadedData(rawRows, sheetName = "Tipificacaciones_WIN") {
+  if (!rawRows || rawRows.length === 0) {
+    alert("No se encontraron registros en la fuente seleccionada.");
+    hideLoading();
+    return;
+  }
+  
+  allRows = rawRows.map(r => {
+    const row = {};
+    Object.keys(r).forEach(k => {
+      row[k.trim()] = r[k];
+    });
+    if (row["Fecha Llamada"]) {
+      row["Fecha Llamada"] = parseExcelDate(row["Fecha Llamada"]);
+    }
+    return row;
+  });
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  document.getElementById('exportBtn').style.display = 'inline-block';
+  document.getElementById('loadedLabel').innerText = sheetName;
+  
+  updateLastUpdateLabel();
+  initDashboardControls();
+  applyFilters();
+  hideLoading();
+}
+
+function syncGoogleSheet() {
+  showLoading("Sincronizando Google Sheet", "Conectando con la hoja Tipificacaciones_WIN…");
+  fetch(APPS_SCRIPT_URL)
+    .then(res => {
+      if (!res.ok) throw new Error("Error de conexión con el servidor");
+      return res.json();
+    })
+    .then(data => {
+      let rows = [];
+      if (Array.isArray(data)) {
+        rows = data;
+      } else if (data.data && Array.isArray(data.data)) {
+        rows = data.data;
+      } else if (data.Tipificacaciones_WIN && Array.isArray(data.Tipificacaciones_WIN)) {
+        rows = data.Tipificacaciones_WIN;
+      } else {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey && Array.isArray(data[firstKey])) {
+          rows = data[firstKey];
+        }
+      }
+      processLoadedData(rows, "Tipificacaciones_WIN (Online)");
+    })
+    .catch(err => {
+      hideLoading();
+      alert("Error al sincronizar con Google Sheet: " + err.message);
+    });
+}
+
+document.getElementById('syncBtn').addEventListener('click', syncGoogleSheet);
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  showLoading("Procesando archivo Excel", "Leyendo hojas y structurando información…");
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      let sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+      processLoadedData(json, sheetName);
+    } catch (err) {
+      hideLoading();
+      alert("Error al leer el archivo Excel: " + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function initDashboardControls() {
+  const dates = allRows.map(r => r["Fecha Llamada"]).filter(Boolean).sort();
+  if (dates.length > 0) {
+    document.getElementById('from').value = dates[0];
+    document.getElementById('to').value = dates[dates.length - 1];
+  }
+  
+  const agents = [...new Set(allRows.map(r => formatVal(r["Nombre Agente"])).filter(Boolean))].sort();
+  const agentSel = document.getElementById('agent');
+  agentSel.innerHTML = '<option value="">Todos los agentes</option>';
+  agents.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = a;
+    agentSel.appendChild(opt);
+  });
+
+  const kinds = [...new Set(allRows.map(r => formatVal(r["Tipo"])).filter(Boolean))].sort();
+  const kindSel = document.getElementById('kind');
+  kindSel.innerHTML = '<option value="">Todos los tipos</option>';
+  kinds.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = k;
+    kindSel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const from = document.getElementById('from').value;
+  const to = document.getElementById('to').value;
+  const agent = document.getElementById('agent').value;
+  const kind = document.getElementById('kind').value;
+  const view = document.getElementById('view').value;
+
+  filteredRows = allRows.filter(r => {
+    const d = r["Fecha Llamada"];
+    if (from && d && d < from) return false;
+    if (to && d && d > to) return false;
+    if (agent && formatVal(r["Nombre Agente"]) !== agent) return false;
+    if (kind && formatVal(r["Tipo"]) !== kind) return false;
+    
+    const agName = formatVal(r["Nombre Agente"]).toLowerCase();
+    const isDisc = formatVal(r["Tipo"]).toLowerCase() === "discador" || agName.includes("discador");
+    const isContact = formatVal(r["Concepto"]).toLowerCase().includes("contacto efectivo");
+    
+    if (view === "human" && isDisc) return false;
+    if (view === "commercial" && isDisc) return false;
+    if (view === "contact" && !isContact) return false;
+    
+    return true;
+  });
+
+  document.getElementById('periodLabel').innerText = `Periodo: ${from || 'Inicio'} al ${to || 'Fin'}`;
+  currentPage = 1;
+  renderKPIs();
+  renderCharts();
+  renderTipTable();
+  renderDetailTable();
+}
+
+document.getElementById('apply').addEventListener('click', applyFilters);
+
+function renderKPIs() {
+  const total = filteredRows.length;
+  let ef = 0, noEf = 0, noCont = 0, disc = 0, ventas = 0;
+
+  filteredRows.forEach(r => {
+    const c = formatVal(r["Concepto"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+
+    if (c.includes("contacto efectivo")) ef++;
+    else if (c.includes("contacto no efectivo")) noEf++;
+    else if (c.includes("no contacto")) noCont++;
+    else if (c.includes("discador")) disc++;
+
+    if (c2.includes("venta") || c4.includes("venta")) ventas++;
+  });
+
+  const baseContact = ef + noEf + noCont;
+  const contactability = baseContact > 0 ? ((ef / baseContact) * 100).toFixed(1) : "0.0";
+  const conversion = ef > 0 ? ((ventas / ef) * 100).toFixed(1) : "0.0";
+
+  const container = document.getElementById('kpis');
+  container.innerHTML = `
+    <div class="kpi" style="--tint:#e8f2ff">
+      <div class="label">Total Gestiones</div>
+      <div class="value">${total.toLocaleString()}</div>
+      <div class="sub">Registros en el periodo</div>
+    </div>
+    <div class="kpi" style="--tint:#dcfce7">
+      <div class="label">Contacto Efectivo</div>
+      <div class="value" style="color:var(--green)">${ef.toLocaleString()}</div>
+      <div class="sub">${total > 0 ? ((ef/total)*100).toFixed(1) : 0}% del total</div>
+    </div>
+    <div class="kpi" style="--tint:#fef3c7">
+      <div class="label">Tasa Contactabilidad</div>
+      <div class="value" style="color:#d97706">${contactability}%</div>
+      <div class="sub">Efectivo / (Ef + NoEf + NoCont)</div>
+    </div>
+    <div class="kpi" style="--tint:#dbeafe">
+      <div class="label">Ventas Tipificadas</div>
+      <div class="value" style="color:var(--blue)">${ventas.toLocaleString()}</div>
+      <div class="sub">Cierres logrados</div>
+    </div>
+    <div class="kpi" style="--tint:#ccfbf1">
+      <div class="label">Tasa Conversión</div>
+      <div class="value" style="color:#0d9488">${conversion}%</div>
+      <div class="sub">Ventas / Contactos Efectivos</div>
+    </div>
+    <div class="kpi" style="--tint:#f1f5f9">
+      <div class="label">Gestiones Discador</div>
+      <div class="value" style="color:var(--muted)">${disc.toLocaleString()}</div>
+      <div class="sub">Barridos automáticos</div>
+    </div>
+  `;
+}
+
+function renderCharts() {
+  if (tipChartInstance) tipChartInstance.destroy();
+  if (funnelChartInstance) funnelChartInstance.destroy();
+  if (agentChartInstance) agentChartInstance.destroy();
+  if (trendChartInstance) trendChartInstance.destroy();
+  if (reasonChartInstance) reasonChartInstance.destroy();
+
+  const tipCounts = {};
+  filteredRows.forEach(r => {
+    const val = formatVal(r["Concepto"]);
+    if (val) tipCounts[val] = (tipCounts[val] || 0) + 1;
+  });
+  document.getElementById('tipChartCount').innerText = `${filteredRows.length} registros`;
+  tipChartInstance = new Chart(document.getElementById('tipChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(tipCounts),
+      datasets: [{ data: Object.values(tipCounts), backgroundColor: ['#2563eb', '#16a34a', '#ea580c', '#dc2626', '#0891b2', '#8b5cf6', '#64748b'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  let ef = 0, noEf = 0, noCont = 0, ventas = 0;
+  filteredRows.forEach(r => {
+    const c = formatVal(r["Concepto"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+    if (c.includes("contacto efectivo")) ef++;
+    else if (c.includes("contacto no efectivo")) noEf++;
+    else if (c.includes("no contacto")) noCont++;
+    if (c2.includes("venta") || c4.includes("venta")) ventas++;
+  });
+  document.getElementById('funnelChartCount').innerText = `${filteredRows.length} registros`;
+  funnelChartInstance = new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Total Gestiones', 'Contacto Efectivo', 'Ventas'],
+      datasets: [{ label: 'Volumen', data: [filteredRows.length, ef, ventas], backgroundColor: ['#12243a', '#0891b2', '#16a34a'] }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  const agentCounts = {};
+  filteredRows.forEach(r => {
+    const ag = formatVal(r["Nombre Agente"]);
+    if (ag && !ag.toLowerCase().includes("discador")) {
+      agentCounts[ag] = (agentCounts[ag] || 0) + 1;
+    }
+  });
+  const sortedAgents = Object.entries(agentCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('agentChartCount').innerText = `${sortedAgents.reduce((s,a)=>s+a[1],0)} gestiones`;
+  agentChartInstance = new Chart(document.getElementById('agentChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedAgents.map(a => a[0]),
+      datasets: [{ label: 'Gestiones', data: sortedAgents.map(a => a[1]), backgroundColor: '#2563eb' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  const trendMap = {};
+  filteredRows.forEach(r => {
+    const d = r["Fecha Llamada"];
+    if (!d) return;
+    if (!trendMap[d]) trendMap[d] = { total: 0, ef: 0, ventas: 0 };
+    trendMap[d].total++;
+    const c = formatVal(r["Concepto"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+    if (c.includes("contacto efectivo")) trendMap[d].ef++;
+    if (c2.includes("venta") || c4.includes("venta")) trendMap[d].ventas++;
+  });
+  const sortedDates = Object.keys(trendMap).sort();
+  document.getElementById('trendChartCount').innerText = `${sortedDates.length} días`;
+  trendChartInstance = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: sortedDates,
+      datasets: [
+        { label: 'Total', data: sortedDates.map(d => trendMap[d].total), borderColor: '#12243a', tension: 0.2 },
+        { label: 'Contactos', data: sortedDates.map(d => trendMap[d].ef), borderColor: '#0891b2', tension: 0.2 },
+        { label: 'Ventas', data: sortedDates.map(d => trendMap[d].ventas), borderColor: '#16a34a', tension: 0.2 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  const reasonCounts = {};
+  filteredRows.forEach(r => {
+    const val = formatVal(r["Concepto4"]);
+    if (val) reasonCounts[val] = (reasonCounts[val] || 0) + 1;
+  });
+  const sortedReasons = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('reasonChartCount').innerText = `${filteredRows.length} registros`;
+  reasonChartInstance = new Chart(document.getElementById('reasonChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedReasons.map(r => r[0]),
+      datasets: [{ label: 'Frecuencia', data: sortedReasons.map(r => r[1]), backgroundColor: '#ea580c' }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
+
+function renderTipTable() {
+  const counts = {};
+  filteredRows.forEach(r => {
+    const val = formatVal(r["Concepto"]) || "Sin Clasificar";
+    counts[val] = (counts[val] || 0) + 1;
+  });
+
+  const total = filteredRows.length;
+  let html = '<table><thead><tr><th>Concepto / Tipificación</th><th class="num">Volumen</th><th class="num">% Part.</th></tr></thead><tbody>';
+  Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([k, v]) => {
+    const pct = total > 0 ? ((v / total) * 100).toFixed(1) : 0;
+    html += `<tr><td><b>${k}</b></td><td class="num">${v.toLocaleString()}</td><td class="num">${pct}%</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('tipTable').innerHTML = html;
+}
+
+function renderDetailTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const searchFiltered = filteredRows.filter(r => {
+    if (!q) return true;
+    return Object.values(r).some(v => String(v).toLowerCase().includes(q));
+  });
+
+  document.getElementById('rowsLabel').innerText = `${searchFiltered.length} registros`;
+  document.getElementById('detailCount').innerText = `Mostrando ${searchFiltered.length} de ${filteredRows.length} registros filtrados`;
+
+  const totalPages = Math.ceil(searchFiltered.length / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  document.getElementById('pageLabel').innerText = `Página ${currentPage} de ${totalPages}`;
+
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = searchFiltered.slice(start, start + pageSize);
+
+  if (pageRows.length === 0) {
+    document.getElementById('detailTable').innerHTML = '<div class="empty">No se encontraron registros que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  const cols = Object.keys(pageRows[0]);
+  let html = '<table><thead><tr>';
+  cols.forEach(c => html += `<th>${c}</th>`);
+  html += '</tr></thead><tbody>';
+
+  pageRows.forEach(r => {
+    html += '<tr>';
+    cols.forEach(c => html += `<td>${r[c] !== undefined ? r[c] : ''}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('detailTable').innerHTML = html;
+}
+
+document.getElementById('search').addEventListener('input', () => { currentPage = 1; renderDetailTable(); });
+document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderDetailTable(); } });
+document.getElementById('nextPage').addEventListener('click', () => { currentPage++; renderDetailTable(); });
+
+function exportToExcel(rows, fileName) {
+  if (!rows || rows.length === 0) return alert("No hay datos para exportar.");
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Datos");
+  XLSX.writeFile(wb, fileName);
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => exportToExcel(filteredRows, "WIN_Datos_Filtrados.xlsx"));
+document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(filteredRows, "WIN_Todas_Las_Columnas.xlsx"));
+</script>
+</body>
+</html>
