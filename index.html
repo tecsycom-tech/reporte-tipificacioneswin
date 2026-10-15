@@ -86,17 +86,19 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
     <section class="panel"><div class="charthead"><h3>🔎 Motivos frecuentes (Concepto4)</h3><span class="chartcount" id="reasonChartCount">0 registros</span></div><p class="desc">Top 10 del universo filtrado</p><div class="chartbox tall"><canvas id="reasonChart"></canvas></div></section>
     <section class="panel"><h3>Resumen por tipificación</h3><p class="desc">Volumen y participación sobre los registros filtrados</p><div class="tablewrap" id="tipTable"></div></section>
   </div>
-  <div class="sectionhead"><div><h2>Detalle de registros</h2><p>Detalle de la hoja Tipificacaciones_WIN · encabezados en mayúscula · todas las columnas originales</p></div><span class="pill" id="rowsLabel"></span></div>
+  <div class="sectionhead"><div><h2>Detalle de registros</h2><p>Información exacta de la hoja Tipificacaciones_WIN tal cual el original</p></div><span class="pill" id="rowsLabel"></span></div>
   <section class="panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input id="search" placeholder="Buscar en todas las columnas…" style="max-width:380px"><button class="filterbtn" id="exportAllBtn" style="align-self:auto">⬇ Exportar todas las columnas a Excel</button><span class="desc" id="detailCount" style="margin:0"></span><button class="filterbtn" id="prevPage" style="align-self:auto">← Anterior</button><span class="desc" id="pageLabel" style="margin:0">Página 1</span><button class="filterbtn" id="nextPage" style="align-self:auto">Siguiente →</button></div><div class="tablewrap" id="detailTable"></div></section>
   <div class="note"><b>Nota metodológica:</b> un registro no equivale necesariamente a un cliente único. La tasa de contacto se calcula como Contacto Efectivo ÷ (Contacto Efectivo + Contacto No Efectivo + No contacto). La conversión usa Ventas tipificadas ÷ Contactos efectivos. Validar estos denominadores con la definición comercial oficial antes de usarlos como KPI contractual.</div>
   <div class="foot"><span>WIN · Dashboard comercial de call center</span><span id="quality"></span></div>
 </div>
 </main>
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
-const originalRowsMap = new WeakMap();
+Chart.register(ChartDataLabels);
+
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3HBL4WPZBMHb4CmANkM9V_IAkyqoRWKFJ2puQQr77BFcRC6RGr0SIC0pZhutEekqrlw/exec";
 let allRows = [];
 let filteredRows = [];
+let originalColumns = [];
 let currentPage = 1;
 const pageSize = 50;
 
@@ -122,17 +124,25 @@ function updateLastUpdateLabel() {
   document.getElementById('lastUpdateLabel').innerText = `🕒 Última actualización: ${dateStr} ${timeStr}`;
 }
 
-function parseExcelDate(val) {
+// Convierte texto de fecha DD/MM/YYYY o DD-MM-YYYY a ISO (YYYY-MM-DD) SOLO para comparar en los filtros
+function parseFilterDate(val) {
   if (!val) return "";
-  if (typeof val === 'number') {
-    const d = XLSX.SSF.parse_date_code(val);
-    if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-  }
   const str = String(val).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
-    const parts = str.split('/');
-    return `${parts[2]}-${String(parts[0]).padStart(2,'0')}-${String(parts[1]).padStart(2,'0')}`;
+  
+  const sep = str.includes('/') ? '/' : (str.includes('-') ? '-' : null);
+  if (sep) {
+    const parts = str.split(sep);
+    if (parts.length === 3) {
+      const p0 = parts[0].trim();
+      const p1 = parts[1].trim();
+      const p2 = parts[2].trim().substring(0, 4);
+      if (p2.length === 4 && !isNaN(p2)) {
+        const day = p0.padStart(2, '0');      // Primer número = Día
+        const month = p1.padStart(2, '0');    // Segundo número = Mes
+        return `${p2}-${month}-${day}`;        // Formato para input HTML date: YYYY-MM-DD
+      }
+    }
   }
   return str;
 }
@@ -149,16 +159,10 @@ function processLoadedData(rawRows, sheetName = "Tipificacaciones_WIN") {
     return;
   }
   
-  allRows = rawRows.map(r => {
-    const row = {};
-    Object.keys(r).forEach(k => {
-      row[k.trim()] = r[k];
-    });
-    if (row["Fecha Llamada"]) {
-      row["Fecha Llamada"] = parseExcelDate(row["Fecha Llamada"]);
-    }
-    return row;
-  });
+  originalColumns = Object.keys(rawRows[0]);
+
+  // Almacenar datos exactamente tal cual vienen en formato original de texto
+  allRows = rawRows.map(r => ({ ...r }));
 
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('dashboardContent').style.display = 'block';
@@ -186,6 +190,8 @@ function syncGoogleSheet() {
         rows = data.data;
       } else if (data.Tipificacaciones_WIN && Array.isArray(data.Tipificacaciones_WIN)) {
         rows = data.Tipificacaciones_WIN;
+      } else if (data.fullData && Array.isArray(data.fullData)) {
+        rows = data.fullData;
       } else {
         const firstKey = Object.keys(data)[0];
         if (firstKey && Array.isArray(data[firstKey])) {
@@ -205,15 +211,15 @@ document.getElementById('syncBtn').addEventListener('click', syncGoogleSheet);
 document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
-  showLoading("Procesando archivo Excel", "Leyendo hojas y structurando información…");
+  showLoading("Procesando archivo Excel", "Leyendo hojas y estructurando información…");
   const reader = new FileReader();
   reader.onload = function(evt) {
     try {
       const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const workbook = XLSX.read(data, { type: 'array', raw: false });
       let sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
       processLoadedData(json, sheetName);
     } catch (err) {
       hideLoading();
@@ -224,13 +230,13 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 });
 
 function initDashboardControls() {
-  const dates = allRows.map(r => r["Fecha Llamada"]).filter(Boolean).sort();
+  const dates = allRows.map(r => parseFilterDate(r["Fecha Llamada"] || r["FECHA LLAMADA"] || r["Fecha"])).filter(Boolean).sort();
   if (dates.length > 0) {
     document.getElementById('from').value = dates[0];
     document.getElementById('to').value = dates[dates.length - 1];
   }
   
-  const agents = [...new Set(allRows.map(r => formatVal(r["Nombre Agente"])).filter(Boolean))].sort();
+  const agents = [...new Set(allRows.map(r => formatVal(r["Nombre Agente"] || r["NOMBRE AGENTE"] || r["Agente"])).filter(Boolean))].sort();
   const agentSel = document.getElementById('agent');
   agentSel.innerHTML = '<option value="">Todos los agentes</option>';
   agents.forEach(a => {
@@ -240,7 +246,7 @@ function initDashboardControls() {
     agentSel.appendChild(opt);
   });
 
-  const kinds = [...new Set(allRows.map(r => formatVal(r["Tipo"])).filter(Boolean))].sort();
+  const kinds = [...new Set(allRows.map(r => formatVal(r["Tipo"] || r["TIPO"])).filter(Boolean))].sort();
   const kindSel = document.getElementById('kind');
   kindSel.innerHTML = '<option value="">Todos los tipos</option>';
   kinds.forEach(k => {
@@ -259,15 +265,20 @@ function applyFilters() {
   const view = document.getElementById('view').value;
 
   filteredRows = allRows.filter(r => {
-    const d = r["Fecha Llamada"];
+    const d = parseFilterDate(r["Fecha Llamada"] || r["FECHA LLAMADA"] || r["Fecha"]);
     if (from && d && d < from) return false;
     if (to && d && d > to) return false;
-    if (agent && formatVal(r["Nombre Agente"]) !== agent) return false;
-    if (kind && formatVal(r["Tipo"]) !== kind) return false;
+
+    const agNameVal = formatVal(r["Nombre Agente"] || r["NOMBRE AGENTE"] || r["Agente"]);
+    if (agent && agNameVal !== agent) return false;
+
+    const tipoVal = formatVal(r["Tipo"] || r["TIPO"]);
+    if (kind && tipoVal !== kind) return false;
     
-    const agName = formatVal(r["Nombre Agente"]).toLowerCase();
-    const isDisc = formatVal(r["Tipo"]).toLowerCase() === "discador" || agName.includes("discador");
-    const isContact = formatVal(r["Concepto"]).toLowerCase().includes("contacto efectivo");
+    const agNameLower = agNameVal.toLowerCase();
+    const isDisc = tipoVal.toLowerCase() === "discador" || agNameLower.includes("discador");
+    const conceptoVal = formatVal(r["Concepto"] || r["CONCEPTO"]).toLowerCase();
+    const isContact = conceptoVal.includes("contacto efectivo");
     
     if (view === "human" && isDisc) return false;
     if (view === "commercial" && isDisc) return false;
@@ -291,9 +302,9 @@ function renderKPIs() {
   let ef = 0, noEf = 0, noCont = 0, disc = 0, ventas = 0;
 
   filteredRows.forEach(r => {
-    const c = formatVal(r["Concepto"]).toLowerCase();
-    const c2 = formatVal(r["Concepto2"]).toLowerCase();
-    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+    const c = formatVal(r["Concepto"] || r["CONCEPTO"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"] || r["CONCEPTO2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"] || r["CONCEPTO4"]).toLowerCase();
 
     if (c.includes("contacto efectivo")) ef++;
     else if (c.includes("contacto no efectivo")) noEf++;
@@ -349,9 +360,19 @@ function renderCharts() {
   if (trendChartInstance) trendChartInstance.destroy();
   if (reasonChartInstance) reasonChartInstance.destroy();
 
+  const barDatalabelsConfig = {
+    anchor: 'center',
+    align: 'center',
+    color: '#ffffff',
+    font: { weight: 'bold', size: 12 },
+    formatter: function(val) { return val > 0 ? val.toLocaleString() : ''; },
+    textStrokeColor: '#102238',
+    textStrokeWidth: 2
+  };
+
   const tipCounts = {};
   filteredRows.forEach(r => {
-    const val = formatVal(r["Concepto"]);
+    const val = formatVal(r["Concepto"] || r["CONCEPTO"]);
     if (val) tipCounts[val] = (tipCounts[val] || 0) + 1;
   });
   document.getElementById('tipChartCount').innerText = `${filteredRows.length} registros`;
@@ -361,14 +382,27 @@ function renderCharts() {
       labels: Object.keys(tipCounts),
       datasets: [{ data: Object.values(tipCounts), backgroundColor: ['#2563eb', '#16a34a', '#ea580c', '#dc2626', '#0891b2', '#8b5cf6', '#64748b'] }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        datalabels: {
+          color: '#ffffff',
+          font: { weight: 'bold', size: 11 },
+          formatter: (val) => val > 0 ? val.toLocaleString() : '',
+          textStrokeColor: '#102238',
+          textStrokeWidth: 2
+        }
+      }
+    }
   });
 
   let ef = 0, noEf = 0, noCont = 0, ventas = 0;
   filteredRows.forEach(r => {
-    const c = formatVal(r["Concepto"]).toLowerCase();
-    const c2 = formatVal(r["Concepto2"]).toLowerCase();
-    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+    const c = formatVal(r["Concepto"] || r["CONCEPTO"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"] || r["CONCEPTO2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"] || r["CONCEPTO4"]).toLowerCase();
     if (c.includes("contacto efectivo")) ef++;
     else if (c.includes("contacto no efectivo")) noEf++;
     else if (c.includes("no contacto")) noCont++;
@@ -381,12 +415,20 @@ function renderCharts() {
       labels: ['Total Gestiones', 'Contacto Efectivo', 'Ventas'],
       datasets: [{ label: 'Volumen', data: [filteredRows.length, ef, ventas], backgroundColor: ['#12243a', '#0891b2', '#16a34a'] }]
     },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
   });
 
   const agentCounts = {};
   filteredRows.forEach(r => {
-    const ag = formatVal(r["Nombre Agente"]);
+    const ag = formatVal(r["Nombre Agente"] || r["NOMBRE AGENTE"] || r["Agente"]);
     if (ag && !ag.toLowerCase().includes("discador")) {
       agentCounts[ag] = (agentCounts[ag] || 0) + 1;
     }
@@ -399,18 +441,25 @@ function renderCharts() {
       labels: sortedAgents.map(a => a[0]),
       datasets: [{ label: 'Gestiones', data: sortedAgents.map(a => a[1]), backgroundColor: '#2563eb' }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
   });
 
   const trendMap = {};
   filteredRows.forEach(r => {
-    const d = r["Fecha Llamada"];
+    const d = parseFilterDate(r["Fecha Llamada"] || r["FECHA LLAMADA"] || r["Fecha"]);
     if (!d) return;
     if (!trendMap[d]) trendMap[d] = { total: 0, ef: 0, ventas: 0 };
     trendMap[d].total++;
-    const c = formatVal(r["Concepto"]).toLowerCase();
-    const c2 = formatVal(r["Concepto2"]).toLowerCase();
-    const c4 = formatVal(r["Concepto4"]).toLowerCase();
+    const c = formatVal(r["Concepto"] || r["CONCEPTO"]).toLowerCase();
+    const c2 = formatVal(r["Concepto2"] || r["CONCEPTO2"]).toLowerCase();
+    const c4 = formatVal(r["Concepto4"] || r["CONCEPTO4"]).toLowerCase();
     if (c.includes("contacto efectivo")) trendMap[d].ef++;
     if (c2.includes("venta") || c4.includes("venta")) trendMap[d].ventas++;
   });
@@ -426,12 +475,24 @@ function renderCharts() {
         { label: 'Ventas', data: sortedDates.map(d => trendMap[d].ventas), borderColor: '#16a34a', tension: 0.2 }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        datalabels: {
+          align: 'top',
+          anchor: 'end',
+          color: '#12243a',
+          font: { weight: 'bold', size: 10 },
+          formatter: (val) => val > 0 ? val : ''
+        }
+      }
+    }
   });
 
   const reasonCounts = {};
   filteredRows.forEach(r => {
-    const val = formatVal(r["Concepto4"]);
+    const val = formatVal(r["Concepto4"] || r["CONCEPTO4"]);
     if (val) reasonCounts[val] = (reasonCounts[val] || 0) + 1;
   });
   const sortedReasons = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
@@ -442,14 +503,22 @@ function renderCharts() {
       labels: sortedReasons.map(r => r[0]),
       datasets: [{ label: 'Frecuencia', data: sortedReasons.map(r => r[1]), backgroundColor: '#ea580c' }]
     },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
   });
 }
 
 function renderTipTable() {
   const counts = {};
   filteredRows.forEach(r => {
-    const val = formatVal(r["Concepto"]) || "Sin Clasificar";
+    const val = formatVal(r["Concepto"] || r["CONCEPTO"]) || "Sin Clasificar";
     counts[val] = (counts[val] || 0) + 1;
   });
 
@@ -485,7 +554,8 @@ function renderDetailTable() {
     return;
   }
 
-  const cols = Object.keys(pageRows[0]);
+  const cols = originalColumns.length > 0 ? originalColumns : Object.keys(pageRows[0]);
+  
   let html = '<table><thead><tr>';
   cols.forEach(c => html += `<th>${c}</th>`);
   html += '</tr></thead><tbody>';
@@ -505,14 +575,15 @@ document.getElementById('nextPage').addEventListener('click', () => { currentPag
 
 function exportToExcel(rows, fileName) {
   if (!rows || rows.length === 0) return alert("No hay datos para exportar.");
-  const ws = XLSX.utils.json_to_sheet(rows);
+  // Exportación directa manteniendo textos y formatos de columna originales
+  const ws = XLSX.utils.json_to_sheet(rows, { header: originalColumns });
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Datos");
+  XLSX.utils.book_append_sheet(wb, ws, "Tipificacaciones_WIN");
   XLSX.writeFile(wb, fileName);
 }
 
-document.getElementById('exportBtn').addEventListener('click', () => exportToExcel(filteredRows, "WIN_Datos_Filtrados.xlsx"));
-document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(filteredRows, "WIN_Todas_Las_Columnas.xlsx"));
+document.getElementById('exportBtn').addEventListener('click', () => exportToExcel(filteredRows, "Tipificacaciones_WIN_Filtrados.xlsx"));
+document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(filteredRows, "Tipificacaciones_WIN_Original.xlsx"));
 </script>
 </body>
 </html>
