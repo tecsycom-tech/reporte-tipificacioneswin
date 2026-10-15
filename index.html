@@ -10,13 +10,13 @@
 <style>
 :root{--bg:#f4f7fb;--card:#fff;--ink:#152238;--muted:#69788d;--line:#e5eaf2;--navy:#12243a;--blue:#2563eb;--cyan:#0891b2;--green:#16a34a;--orange:#ea580c;--red:#dc2626}
 *{box-sizing:border-box}
-#loadingScreen{position:fixed;inset:0;z-index:9999;background:#102238;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#loadingScreen{position:fixed;inset:0;z-index:20000;background:#102238;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 #loadingScreen .loadicon{font-size:48px;margin-bottom:14px;animation:pulse 1.5s infinite}
 @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
 #loadingScreen p{color:#c5d5e4}
 body{margin:0;background:var(--bg);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
 header{background:linear-gradient(120deg,#102238,#183f61);color:white;padding:25px clamp(16px,3vw,40px);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
-.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn,.adminbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.adminbtn{background:#16a34a;color:#fff}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
+.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn,.adminbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.adminbtn{background:#16a34a;color:#fff}.upload{position:relative;overflow:hidden}.upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}.hidden-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
 main{max-width:1500px;margin:auto;padding:22px clamp(12px,2.5vw,32px) 40px}
 #dashboardContent{display:none}
 .empty-state{background:var(--card);border:2px dashed var(--line);border-radius:16px;padding:60px 20px;text-align:center;max-width:600px;margin:60px auto}
@@ -51,7 +51,7 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
     
     <div style="margin-bottom:15px;">
       <label>Opción A: Cargar Archivo Excel (.xlsx, .xls)</label>
-      <input type="file" id="modalFileInput" accept=".xlsx,.xls" style="margin-top:6px;">
+      <input type="file" id="modalFileInput" accept=".xlsx,.xls,.csv" style="margin-top:6px;">
     </div>
     
     <div style="margin-bottom:15px;">
@@ -76,9 +76,7 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
     </div>
   </div>
   <div class="header-actions">
-    <!-- Input invisible independiente -->
-    <input type="file" id="fileInputHeader" accept=".xlsx,.xls" style="display:none;">
-    <button class="upload" onclick="triggerHeaderFileInput()">📁 Cargar Excel Local</button>
+    <label class="upload">📁 Cargar Excel Local<input type="file" id="fileInput" accept=".xlsx,.xls,.csv"></label>
     <button class="syncbtn" id="syncBtn">🔄 Sincronizar Supabase</button>
     <button class="adminbtn" onclick="openUploadModal()">⚡ Cargar Datos a Supabase</button>
     <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
@@ -90,8 +88,9 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
   <h3>Sin datos cargados</h3>
   <p>Selecciona una opción en la parte superior para comenzar:</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <button class="upload" onclick="triggerHeaderFileInput()">📁 Cargar archivo Excel Local</button>
-    <button class="syncbtn" onclick="syncGoogleSheet()">🔄 Sincronizar Supabase</button>
+    <button class="upload" type="button" onclick="document.getElementById('fileInput2').click()">📁 Cargar archivo Excel Local</button>
+    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">🔄 Sincronizar Supabase</button>
+    <input type="file" id="fileInput2" class="hidden-file" accept=".xlsx,.xls,.csv">
   </div>
 </div>
 
@@ -136,7 +135,19 @@ Chart.register(ChartDataLabels);
 // Configuración de Supabase
 const SUPABASE_URL = "https://jxpeztieqwotfgswhzhx.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cGV6dGllcXdvdGZnc3doemh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzQ4MDQsImV4cCI6MjA4NjQxMDgwNH0.Hf-lbGlP2OmH7Uh2LNKqwHkwHDp7yQV6O73aXw5NCZk";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// OJO: la libreria CDN ya define window.supabase. Declarar "const supabase" aqui provocaba
+// "Cannot access 'supabase' before initialization" y el script se detenia (ningun boton funcionaba).
+// Por eso el cliente se llama "sb".
+let sb = null;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+  console.error("No se pudo iniciar Supabase:", e);
+}
+function requireSupabase() {
+  if (!sb) throw new Error("La libreria de Supabase no cargo (revisa tu conexion a internet) y recarga la pagina.");
+  return sb;
+}
 
 let allRows = [];
 let filteredRows = [];
@@ -158,10 +169,6 @@ function showLoading(title, msg) {
 }
 function hideLoading() {
   document.getElementById('loadingScreen').style.display = 'none';
-}
-
-function triggerHeaderFileInput() {
-  document.getElementById('fileInputHeader').click();
 }
 
 function openUploadModal() { document.getElementById('uploadModal').style.display = 'flex'; }
@@ -226,8 +233,20 @@ function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
     return;
   }
   
-  originalColumns = Object.keys(rawRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra' && k !== 'datos');
-  allRows = rawRows.map(r => ({ ...r }));
+  // Filas tal cual se cargaron. Si vienen de Supabase con un campo JSON "datos_extra", se aplana.
+  allRows = rawRows.map(r => {
+    const o = { ...r };
+    if (o.datos_extra && typeof o.datos_extra === 'object') {
+      Object.keys(o.datos_extra).forEach(k => { if (!(k in o)) o[k] = o.datos_extra[k]; });
+    }
+    return o;
+  });
+  // Columnas en el mismo orden y con los mismos nombres del archivo original (se conservan espacios finales)
+  const colSet = new Set();
+  allRows.forEach(r => Object.keys(r).forEach(k => {
+    if (k !== 'id' && k !== 'created_at' && k !== 'datos_extra') colSet.add(k);
+  }));
+  originalColumns = [...colSet];
 
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('dashboardContent').style.display = 'block';
@@ -240,60 +259,65 @@ function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
   hideLoading();
 }
 
-// LECTURA PAGINADA DESDE SUPABASE (Para soportar 70,000+ filas sin límite de 1,000)
+// LECTURA DESDE SUPABASE (pagina de 1000 en 1000: Supabase limita cada consulta a 1000 filas)
 async function syncGoogleSheet() {
-  showLoading("Sincronizando Supabase", "Iniciando descarga masiva de registros...");
+  showLoading("Sincronizando Supabase", "Obteniendo datos de la base de datos…");
   try {
-    let allFetchedRows = [];
+    const client = requireSupabase();
+    const PAGE = 1000;
     let from = 0;
-    const batchSize = 1000;
-    let hasMore = true;
-
-    while (hasMore) {
-      showLoading("Sincronizando Supabase", `Obtenidos ${allFetchedRows.length.toLocaleString()} registros...`);
-      const { data, error } = await supabaseClient
+    let all = [];
+    while (true) {
+      const { data, error } = await client
         .from('tipificaciones_win')
         .select('*')
-        .range(from, from + batchSize - 1);
-
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
       if (error) throw error;
-
-      if (data && data.length > 0) {
-        // Soporta tanto estructura plana como empaquetada en jsonb 'datos'
-        const parsedBatch = data.map(item => item.datos ? item.datos : item);
-        allFetchedRows = allFetchedRows.concat(parsedBatch);
-        from += batchSize;
-        if (data.length < batchSize) hasMore = false;
-      } else {
-        hasMore = false;
-      }
+      all = all.concat(data || []);
+      document.getElementById('loadingMsg').innerText = `Obteniendo datos… ${all.length} registros`;
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
     }
-
-    processLoadedData(allFetchedRows, "Tipificaciones_WIN (Supabase)");
+    // Si la tabla guarda cada fila en la columna "datos", se usa tal cual (mismas columnas del Excel original)
+    const rows = all.map(r => (r.datos && typeof r.datos === 'object') ? { ...r.datos } : r);
+    processLoadedData(rows, "Tipificaciones_WIN (Supabase)");
   } catch (err) {
     hideLoading();
-    alert("Error al obtener datos desde Supabase: " + err.message);
+    alert("Error al obtener datos desde Supabase: " + explainError(err));
   }
 }
 
-document.getElementById('syncBtn').addEventListener('click', syncGoogleSheet);
+function explainError(err) {
+  const msg = (err && (err.message || err.details)) || String(err);
+  if (/failed to fetch/i.test(msg)) {
+    return msg + "\n\nNo hubo respuesta del servidor: revisa tu conexion, que el proyecto de Supabase este activo y que la URL/clave sean correctas.";
+  }
+  return msg + (err && err.hint ? "\n" + err.hint : "");
+}
 
-// CARGA MASIVA Y REEMPLAZO POR CHUNKS (LOTES) EN SUPABASE
+document.getElementById('syncBtn').addEventListener('click', function() { syncGoogleSheet(); });
+
+// CARGA MASIVA Y REEMPLAZO EN SUPABASE
 async function processAndUploadToSupabase() {
-  const modalFileInput = document.getElementById('modalFileInput');
-  const modalFile = modalFileInput.files[0];
+  const modalFile = document.getElementById('modalFileInput').files[0];
   const pasteData = document.getElementById('pasteArea').value.trim();
   let rowsToUpload = [];
 
   if (modalFile) {
     showLoading("Procesando Excel", "Estructurando archivo...");
-    const dataArr = await modalFile.arrayBuffer();
-    const workbook = XLSX.read(dataArr, { type: 'array' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    rowsToUpload = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    try {
+      const dataArr = await modalFile.arrayBuffer();
+      const workbook = XLSX.read(dataArr, { type: 'array' });
+      const sName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
+      rowsToUpload = XLSX.utils.sheet_to_json(workbook.Sheets[sName], { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
+    } catch (err) {
+      hideLoading();
+      return alert("Error al leer el Excel: " + err.message);
+    }
   } else if (pasteData) {
     showLoading("Procesando texto", "Parseando filas pegadas...");
-    const lines = pasteData.split("\n");
+    const lines = pasteData.split(/\r?\n/);
     if (lines.length > 1) {
       const headers = lines[0].split("\t").map(h => h.trim());
       for (let i = 1; i < lines.length; i++) {
@@ -313,66 +337,66 @@ async function processAndUploadToSupabase() {
     return alert("No se pudo extraer ningún registro válido.");
   }
 
-  showLoading("Limpiando Supabase", "Eliminando registros antiguos...");
+  const CHUNK = 1000; // lotes pequenos: un solo envio grande supera el tiempo maximo de la consulta (statement timeout)
+  const total = rowsToUpload.length;
+  showLoading("Actualizando Supabase", `Subiendo ${total} filas…`);
 
   try {
-    // 1. Limpieza inicial llamando a la función RPC vacía o truncate
-    const { error: truncError } = await supabaseClient.rpc('reemplazar_tipificaciones', {
-      nuevos_datos: []
-    });
-    if (truncError) throw truncError;
-
-    // 2. Inserción por lotes (chunks de 3000 filas para evitar exceder límite de payload JSON)
-    const chunkSize = 3000;
-    const totalChunks = Math.ceil(rowsToUpload.length / chunkSize);
-
-    for (let i = 0; i < totalChunks; i++) {
-      const chunk = rowsToUpload.slice(i * chunkSize, (i + 1) * chunkSize);
-      showLoading(
-        "Cargando a Supabase",
-        `Enviando lote ${i + 1} de ${totalChunks} (${(i * chunkSize).toLocaleString()} / ${rowsToUpload.length.toLocaleString()} filas)...`
-      );
-
-      const { error: uploadError } = await supabaseClient.rpc('reemplazar_tipificaciones', {
-        nuevos_datos: chunk
-      });
-
-      if (uploadError) throw uploadError;
+    const client = requireSupabase();
+    for (let i = 0; i < total; i += CHUNK) {
+      const lote = rowsToUpload.slice(i, i + CHUNK);
+      // 1er lote: borra lo anterior e inserta; los demas solo agregan
+      const fn = i === 0 ? 'reemplazar_tipificaciones' : 'agregar_tipificaciones';
+      const { error } = await client.rpc(fn, { nuevos_datos: lote });
+      if (error) throw error;
+      document.getElementById('loadingMsg').innerText = `Subiendo… ${Math.min(i + CHUNK, total)} de ${total} filas`;
     }
 
     closeUploadModal();
-    modalFileInput.value = "";
-    document.getElementById('pasteArea').value = "";
-    alert("¡Base de datos actualizada e insertada correctamente!");
+    document.getElementById('modalFileInput').value = '';
+    document.getElementById('pasteArea').value = '';
+    alert("¡Base de datos actualizada correctamente!");
     syncGoogleSheet();
   } catch (err) {
     hideLoading();
-    alert("Error al actualizar Supabase: " + err.message);
+    alert("Error al actualizar Supabase: " + explainError(err));
   }
 }
 
-// Carga local desde input header
-document.getElementById('fileInputHeader').addEventListener('change', function(e) {
-  const file = e.target.files[0];
+function handleLocalFile(e) {
+  const input = e.target;
+  const file = input.files && input.files[0];
   if (!file) return;
-  showLoading("Procesando archivo Excel Local", "Leyendo hojas y estructurando información…");
+  showLoading("Procesando archivo Excel", "Leyendo hojas y estructurando información…");
   const reader = new FileReader();
+  reader.onerror = function() {
+    hideLoading();
+    alert("No se pudo leer el archivo seleccionado.");
+    input.value = "";
+  };
   reader.onload = function(evt) {
-    try {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array', raw: false });
-      let sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
-      processLoadedData(json, sheetName);
-      e.target.value = ""; // Reiniciar valor para permitir seleccionar el mismo archivo si es necesario
-    } catch (err) {
-      hideLoading();
-      alert("Error al leer el archivo Excel: " + err.message);
-    }
+    // setTimeout permite que se pinte la pantalla de carga antes del proceso pesado
+    setTimeout(function() {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array', raw: false, cellDates: false });
+        const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
+        processLoadedData(json, sheetName + " (archivo local)");
+      } catch (err) {
+        console.error(err);
+        hideLoading();
+        alert("Error al leer el archivo Excel: " + err.message);
+      } finally {
+        input.value = ""; // permite volver a elegir el mismo archivo
+      }
+    }, 50);
   };
   reader.readAsArrayBuffer(file);
-});
+}
+document.getElementById('fileInput').addEventListener('change', handleLocalFile);
+document.getElementById('fileInput2').addEventListener('change', handleLocalFile);
 
 function initDashboardControls() {
   const dates = allRows.map(r => parseFilterDate(getFieldVal(r, ["Fecha Llamada", "FECHA LLAMADA", "Fecha"]))).filter(Boolean).sort();
@@ -706,15 +730,21 @@ function renderCharts() {
   });
 }
 
+function escHtml(v) {
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Detalle de registros: muestra TODO lo que se cargó, con las mismas columnas y orden del archivo original.
 function renderDetailTable() {
   const q = document.getElementById('search').value.toLowerCase();
-  const searchFiltered = filteredRows.filter(r => {
+  const searchFiltered = allRows.filter(r => {
     if (!q) return true;
-    return Object.values(r).some(v => String(v).toLowerCase().includes(q));
+    return originalColumns.some(c => String(r[c] === undefined || r[c] === null ? '' : r[c]).toLowerCase().includes(q));
   });
 
   document.getElementById('rowsLabel').innerText = `${searchFiltered.length} registros`;
-  document.getElementById('detailCount').innerText = `Mostrando ${searchFiltered.length} de ${filteredRows.length} registros filtrados`;
+  document.getElementById('detailCount').innerText = `Mostrando ${searchFiltered.length} de ${allRows.length} registros cargados`;
 
   const totalPages = Math.ceil(searchFiltered.length / pageSize) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -728,15 +758,12 @@ function renderDetailTable() {
     return;
   }
 
-  const cols = originalColumns.length > 0 ? originalColumns : Object.keys(pageRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra' && k !== 'datos');
-  
   let html = '<table><thead><tr>';
-  cols.forEach(c => html += `<th>${c}</th>`);
+  originalColumns.forEach(c => html += `<th>${escHtml(c)}</th>`);
   html += '</tr></thead><tbody>';
-
   pageRows.forEach(r => {
     html += '<tr>';
-    cols.forEach(c => html += `<td>${r[c] !== undefined ? r[c] : ''}</td>`);
+    originalColumns.forEach(c => html += `<td>${escHtml(r[c])}</td>`);
     html += '</tr>';
   });
   html += '</tbody></table>';
@@ -749,14 +776,21 @@ document.getElementById('nextPage').addEventListener('click', () => { currentPag
 
 function exportToExcel(rows, fileName) {
   if (!rows || rows.length === 0) return alert("No hay datos para exportar.");
-  const ws = XLSX.utils.json_to_sheet(rows, { header: originalColumns });
+  // Mismas columnas, mismo orden y mismos nombres que el archivo cargado
+  const data = rows.map(r => {
+    const o = {};
+    originalColumns.forEach(c => { o[c] = (r[c] === undefined || r[c] === null) ? "" : r[c]; });
+    return o;
+  });
+  const ws = XLSX.utils.json_to_sheet(data, { header: originalColumns });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Tipificaciones_WIN");
   XLSX.writeFile(wb, fileName);
 }
 
+// Superior: solo lo filtrado en el dashboard. Detalle: todo lo cargado.
 document.getElementById('exportBtn').addEventListener('click', () => exportToExcel(filteredRows, "Tipificaciones_WIN_Filtrados.xlsx"));
-document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(filteredRows, "Tipificaciones_WIN_Original.xlsx"));
+document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(allRows, "Tipificaciones_WIN_Original.xlsx"));
 </script>
 </body>
 </html>
