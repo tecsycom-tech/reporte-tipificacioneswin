@@ -44,10 +44,10 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
 <div id="uploadModal" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <h3>⚡ Carga Masiva a Supabase</h3>
+      <h3>⚡ Actualizar datos desde archivo</h3>
       <button class="modal-close" onclick="closeUploadModal()">✕</button>
     </div>
-    <p style="color:var(--muted);font-size:13px;">Sube un archivo Excel o pega directamente los datos copiados desde Excel para <b>reemplazar</b> completamente los datos actuales de la tabla en Supabase.</p>
+    <p style="color:var(--muted);font-size:13px;">Sube un archivo Excel o pega directamente los datos copiados desde Excel para <b>reemplazar</b> completamente los datos actuales de la tabla.</p>
     
     <div style="margin-bottom:15px;">
       <label>Opción A: Cargar Archivo Excel (.xlsx, .xls)</label>
@@ -77,8 +77,8 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
   </div>
   <div class="header-actions">
     <label class="upload">📁 Cargar Excel Local<input type="file" id="fileInput" accept=".xlsx,.xls,.csv"></label>
-    <button class="syncbtn" id="syncBtn">🔄 Sincronizar Supabase</button>
-    <button class="adminbtn" onclick="openUploadModal()">⚡ Cargar Datos a Supabase</button>
+    <button class="syncbtn" id="syncBtn">🔄 Ver información en línea</button>
+    <button class="adminbtn" onclick="openUploadModal()">⚡ Sincronizar datos</button>
     <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
   </div>
 </header>
@@ -89,7 +89,7 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
   <p>Selecciona una opción en la parte superior para comenzar:</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
     <button class="upload" type="button" onclick="document.getElementById('fileInput2').click()">📁 Cargar archivo Excel Local</button>
-    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">🔄 Sincronizar Supabase</button>
+    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">🔄 Ver información en línea</button>
     <input type="file" id="fileInput2" class="hidden-file" accept=".xlsx,.xls,.csv">
   </div>
 </div>
