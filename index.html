@@ -81,10 +81,10 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
     <section class="panel"><div class="charthead"><h3>👥 Top agentes por gestiones comerciales</h3><span class="chartcount" id="agentChartCount">0 gestiones</span></div><p class="desc">No incluye al usuario técnico del discador</p><div class="chartbox"><canvas id="agentChart"></canvas></div></section>
     <section class="panel"><div class="charthead"><h3>📈 Evolución diaria</h3><span class="chartcount" id="trendChartCount">0 registros</span></div><p class="desc">Registros, contactos efectivos y ventas por fecha</p><div class="chartbox"><canvas id="trendChart"></canvas></div></section>
   </div>
-  <div class="sectionhead"><div><h2>Motivos y calidad de gestión</h2><p>Identifica barreras de contacto y oportunidades de mejora</p></div></div>
+  <div class="sectionhead"><div><h2>Motivos y ubicación de gestión</h2><p>Identifica barreras de contacto y distribución geográfica</p></div></div>
   <div class="grid2">
     <section class="panel"><div class="charthead"><h3>🔎 Motivos frecuentes (Concepto4)</h3><span class="chartcount" id="reasonChartCount">0 registros</span></div><p class="desc">Top 10 del universo filtrado</p><div class="chartbox tall"><canvas id="reasonChart"></canvas></div></section>
-    <section class="panel"><h3>Resumen por tipificación</h3><p class="desc">Volumen y participación sobre los registros filtrados</p><div class="tablewrap" id="tipTable"></div></section>
+    <section class="panel"><div class="charthead"><h3>🗺️ Top Departamentos</h3><span class="chartcount" id="deptoChartCount">0 registros</span></div><p class="desc">Distribución por departamento del universo filtrado</p><div class="chartbox tall"><canvas id="deptoChart"></canvas></div></section>
   </div>
   <div class="sectionhead"><div><h2>Detalle de registros</h2><p>Información exacta de la hoja Tipificacaciones_WIN tal cual el original</p></div><span class="pill" id="rowsLabel"></span></div>
   <section class="panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input id="search" placeholder="Buscar en todas las columnas…" style="max-width:380px"><button class="filterbtn" id="exportAllBtn" style="align-self:auto">⬇ Exportar todas las columnas a Excel</button><span class="desc" id="detailCount" style="margin:0"></span><button class="filterbtn" id="prevPage" style="align-self:auto">← Anterior</button><span class="desc" id="pageLabel" style="margin:0">Página 1</span><button class="filterbtn" id="nextPage" style="align-self:auto">Siguiente →</button></div><div class="tablewrap" id="detailTable"></div></section>
@@ -95,7 +95,7 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
 <script>
 Chart.register(ChartDataLabels);
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby3HBL4WPZBMHb4CmANkM9V_IAkyqoRWKFJ2puQQr77BFcRC6RGr0SIC0pZhutEekqrlw/exec";
 let allRows = [];
 let filteredRows = [];
 let originalColumns = [];
@@ -107,6 +107,7 @@ let funnelChartInstance = null;
 let agentChartInstance = null;
 let trendChartInstance = null;
 let reasonChartInstance = null;
+let deptoChartInstance = null;
 
 function showLoading(title, msg) {
   document.getElementById('loadingTitle').innerText = title;
@@ -159,7 +160,6 @@ function parseFilterDate(val) {
   return str;
 }
 
-// Formatea fecha a DD/MM/YYYY para el gráfico de evolución diaria
 function formatDisplayDate(val) {
   if (!val) return "";
   const str = String(val).trim();
@@ -312,7 +312,6 @@ function applyFilters() {
   currentPage = 1;
   renderKPIs();
   renderCharts();
-  renderTipTable();
   renderDetailTable();
 }
 
@@ -380,6 +379,7 @@ function renderCharts() {
   if (agentChartInstance) agentChartInstance.destroy();
   if (trendChartInstance) trendChartInstance.destroy();
   if (reasonChartInstance) reasonChartInstance.destroy();
+  if (deptoChartInstance) deptoChartInstance.destroy();
 
   const barDatalabelsConfig = {
     anchor: 'center',
@@ -475,7 +475,7 @@ function renderCharts() {
     }
   });
 
-  // 4. Evolución Diaria (Con fechas DD/MM/YYYY y etiquetas desfasadas sin sobreposición)
+  // 4. Evolución Diaria
   const trendMap = {};
   filteredRows.forEach(r => {
     const rawD = getFieldVal(r, ["Fecha Llamada", "FECHA LLAMADA", "Fecha"]);
@@ -493,7 +493,6 @@ function renderCharts() {
     if (c2.includes("venta") || c4.includes("venta")) trendMap[isoKey].ventas++;
   });
 
-  // Ordenar cronológicamente por ISO key
   const sortedIsoKeys = Object.keys(trendMap).sort();
   const displayDates = sortedIsoKeys.map(k => trendMap[k].displayDate);
 
@@ -589,23 +588,31 @@ function renderCharts() {
       }
     }
   });
-}
 
-function renderTipTable() {
-  const counts = {};
+  // 6. Nuevo Gráfico: Top Departamentos
+  const deptoCounts = {};
   filteredRows.forEach(r => {
-    const val = getFieldVal(r, ["Concepto", "CONCEPTO"]) || "Sin Clasificar";
-    counts[val] = (counts[val] || 0) + 1;
+    const val = getFieldVal(r, ["Departamento", "DEPARTAMENTO", "Depto"]);
+    if (val) deptoCounts[val] = (deptoCounts[val] || 0) + 1;
   });
-
-  const total = filteredRows.length;
-  let html = '<table><thead><tr><th>Concepto / Tipificación</th><th class="num">Volumen</th><th class="num">% Part.</th></tr></thead><tbody>';
-  Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([k, v]) => {
-    const pct = total > 0 ? ((v / total) * 100).toFixed(1) : 0;
-    html += `<tr><td><b>${k}</b></td><td class="num">${v.toLocaleString()}</td><td class="num">${pct}%</td></tr>`;
+  const sortedDeptos = Object.entries(deptoCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('deptoChartCount').innerText = `${filteredRows.length} registros`;
+  deptoChartInstance = new Chart(document.getElementById('deptoChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedDeptos.map(d => d[0]),
+      datasets: [{ label: 'Registros', data: sortedDeptos.map(d => d[1]), backgroundColor: '#0891b2' }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
   });
-  html += '</tbody></table>';
-  document.getElementById('tipTable').innerHTML = html;
 }
 
 function renderDetailTable() {
