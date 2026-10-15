@@ -261,7 +261,7 @@ function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
 
 // LECTURA DESDE SUPABASE (pagina de 1000 en 1000: Supabase limita cada consulta a 1000 filas)
 async function syncGoogleSheet() {
-  showLoading("Sincronizando Supabase", "Obteniendo datos de la base de datos…");
+  showLoading("Sincronizando Informacion", "Obteniendo datos de la base de datos…");
   try {
     const client = requireSupabase();
     const PAGE = 1000;
