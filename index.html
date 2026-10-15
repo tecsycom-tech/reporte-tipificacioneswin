@@ -16,7 +16,7 @@
 #loadingScreen p{color:#c5d5e4}
 body{margin:0;background:var(--bg);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
 header{background:linear-gradient(120deg,#102238,#183f61);color:white;padding:25px clamp(16px,3vw,40px);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
-.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn,.adminbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.adminbtn{background:#16a34a;color:#fff}.upload input{display:none}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
+.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn,.adminbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.adminbtn{background:#16a34a;color:#fff}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
 main{max-width:1500px;margin:auto;padding:22px clamp(12px,2.5vw,32px) 40px}
 #dashboardContent{display:none}
 .empty-state{background:var(--card);border:2px dashed var(--line);border-radius:16px;padding:60px 20px;text-align:center;max-width:600px;margin:60px auto}
@@ -76,7 +76,9 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
     </div>
   </div>
   <div class="header-actions">
-    <label class="upload">📁 Cargar Excel Local<input type="file" id="fileInput" accept=".xlsx,.xls"></label>
+    <!-- Input invisible independiente -->
+    <input type="file" id="fileInputHeader" accept=".xlsx,.xls" style="display:none;">
+    <button class="upload" onclick="triggerHeaderFileInput()">📁 Cargar Excel Local</button>
     <button class="syncbtn" id="syncBtn">🔄 Sincronizar Supabase</button>
     <button class="adminbtn" onclick="openUploadModal()">⚡ Cargar Datos a Supabase</button>
     <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
@@ -88,7 +90,7 @@ label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-trans
   <h3>Sin datos cargados</h3>
   <p>Selecciona una opción en la parte superior para comenzar:</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <button class="upload" onclick="document.getElementById('fileInput').click()">📁 Cargar archivo Excel Local</button>
+    <button class="upload" onclick="triggerHeaderFileInput()">📁 Cargar archivo Excel Local</button>
     <button class="syncbtn" onclick="syncGoogleSheet()">🔄 Sincronizar Supabase</button>
   </div>
 </div>
@@ -134,7 +136,7 @@ Chart.register(ChartDataLabels);
 // Configuración de Supabase
 const SUPABASE_URL = "https://jxpeztieqwotfgswhzhx.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cGV6dGllcXdvdGZnc3doemh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzQ4MDQsImV4cCI6MjA4NjQxMDgwNH0.Hf-lbGlP2OmH7Uh2LNKqwHkwHDp7yQV6O73aXw5NCZk";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allRows = [];
 let filteredRows = [];
@@ -156,6 +158,10 @@ function showLoading(title, msg) {
 }
 function hideLoading() {
   document.getElementById('loadingScreen').style.display = 'none';
+}
+
+function triggerHeaderFileInput() {
+  document.getElementById('fileInputHeader').click();
 }
 
 function openUploadModal() { document.getElementById('uploadModal').style.display = 'flex'; }
@@ -220,7 +226,7 @@ function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
     return;
   }
   
-  originalColumns = Object.keys(rawRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra');
+  originalColumns = Object.keys(rawRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra' && k !== 'datos');
   allRows = rawRows.map(r => ({ ...r }));
 
   document.getElementById('emptyState').style.display = 'none';
@@ -234,16 +240,36 @@ function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
   hideLoading();
 }
 
-// LECTURA DESDE SUPABASE
+// LECTURA PAGINADA DESDE SUPABASE (Para soportar 70,000+ filas sin límite de 1,000)
 async function syncGoogleSheet() {
-  showLoading("Sincronizando Supabase", "Obteniendo datos de la base de datos…");
+  showLoading("Sincronizando Supabase", "Iniciando descarga masiva de registros...");
   try {
-    const { data, error } = await supabase
-      .from('tipificaciones_win')
-      .select('*');
+    let allFetchedRows = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
-    processLoadedData(data, "Tipificaciones_WIN (Supabase)");
+    while (hasMore) {
+      showLoading("Sincronizando Supabase", `Obtenidos ${allFetchedRows.length.toLocaleString()} registros...`);
+      const { data, error } = await supabaseClient
+        .from('tipificaciones_win')
+        .select('*')
+        .range(from, from + batchSize - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Soporta tanto estructura plana como empaquetada en jsonb 'datos'
+        const parsedBatch = data.map(item => item.datos ? item.datos : item);
+        allFetchedRows = allFetchedRows.concat(parsedBatch);
+        from += batchSize;
+        if (data.length < batchSize) hasMore = false;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    processLoadedData(allFetchedRows, "Tipificaciones_WIN (Supabase)");
   } catch (err) {
     hideLoading();
     alert("Error al obtener datos desde Supabase: " + err.message);
@@ -252,9 +278,10 @@ async function syncGoogleSheet() {
 
 document.getElementById('syncBtn').addEventListener('click', syncGoogleSheet);
 
-// CARGA MASIVA Y REEMPLAZO EN SUPABASE
+// CARGA MASIVA Y REEMPLAZO POR CHUNKS (LOTES) EN SUPABASE
 async function processAndUploadToSupabase() {
-  const modalFile = document.getElementById('modalFileInput').files[0];
+  const modalFileInput = document.getElementById('modalFileInput');
+  const modalFile = modalFileInput.files[0];
   const pasteData = document.getElementById('pasteArea').value.trim();
   let rowsToUpload = [];
 
@@ -286,17 +313,37 @@ async function processAndUploadToSupabase() {
     return alert("No se pudo extraer ningún registro válido.");
   }
 
-  showLoading("Actualizando Supabase", `Reemplazando registros (${rowsToUpload.length} filas)...`);
+  showLoading("Limpiando Supabase", "Eliminando registros antiguos...");
 
   try {
-    const { error } = await supabase.rpc('reemplazar_tipificaciones', {
-      nuevos_datos: rowsToUpload
+    // 1. Limpieza inicial llamando a la función RPC vacía o truncate
+    const { error: truncError } = await supabaseClient.rpc('reemplazar_tipificaciones', {
+      nuevos_datos: []
     });
+    if (truncError) throw truncError;
 
-    if (error) throw error;
+    // 2. Inserción por lotes (chunks de 3000 filas para evitar exceder límite de payload JSON)
+    const chunkSize = 3000;
+    const totalChunks = Math.ceil(rowsToUpload.length / chunkSize);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const chunk = rowsToUpload.slice(i * chunkSize, (i + 1) * chunkSize);
+      showLoading(
+        "Cargando a Supabase",
+        `Enviando lote ${i + 1} de ${totalChunks} (${(i * chunkSize).toLocaleString()} / ${rowsToUpload.length.toLocaleString()} filas)...`
+      );
+
+      const { error: uploadError } = await supabaseClient.rpc('reemplazar_tipificaciones', {
+        nuevos_datos: chunk
+      });
+
+      if (uploadError) throw uploadError;
+    }
 
     closeUploadModal();
-    alert("¡Base de datos actualizada correctamente!");
+    modalFileInput.value = "";
+    document.getElementById('pasteArea').value = "";
+    alert("¡Base de datos actualizada e insertada correctamente!");
     syncGoogleSheet();
   } catch (err) {
     hideLoading();
@@ -304,10 +351,11 @@ async function processAndUploadToSupabase() {
   }
 }
 
-document.getElementById('fileInput').addEventListener('change', function(e) {
+// Carga local desde input header
+document.getElementById('fileInputHeader').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
-  showLoading("Procesando archivo Excel", "Leyendo hojas y estructurando información…");
+  showLoading("Procesando archivo Excel Local", "Leyendo hojas y estructurando información…");
   const reader = new FileReader();
   reader.onload = function(evt) {
     try {
@@ -317,6 +365,7 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
       processLoadedData(json, sheetName);
+      e.target.value = ""; // Reiniciar valor para permitir seleccionar el mismo archivo si es necesario
     } catch (err) {
       hideLoading();
       alert("Error al leer el archivo Excel: " + err.message);
@@ -679,7 +728,7 @@ function renderDetailTable() {
     return;
   }
 
-  const cols = originalColumns.length > 0 ? originalColumns : Object.keys(pageRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra');
+  const cols = originalColumns.length > 0 ? originalColumns : Object.keys(pageRows[0]).filter(k => k !== 'id' && k !== 'created_at' && k !== 'datos_extra' && k !== 'datos');
   
   let html = '<table><thead><tr>';
   cols.forEach(c => html += `<th>${c}</th>`);
