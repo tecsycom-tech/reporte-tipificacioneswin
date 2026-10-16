@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIN | Dashboard Comercial Call Center</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2312243a%22/%3E%3Ctext x=%2250%25%22 y=%2270%25%22 font-size=%2265%22 text-anchor=%22middle%22%3E%F0%9F%93%9E%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<!-- Cliente CDN de Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#152238;--muted:#69788d;--line:#e5eaf2;--navy:#12243a;--blue:#2563eb;--cyan:#0891b2;--green:#16a34a;--orange:#ea580c;--red:#dc2626}
+*{box-sizing:border-box}
+#loadingScreen{position:fixed;inset:0;z-index:20000;background:#102238;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+#loadingScreen .loadicon{font-size:48px;margin-bottom:14px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+#loadingScreen p{color:#c5d5e4}
+body{margin:0;background:var(--bg);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#102238,#183f61);color:white;padding:25px clamp(16px,3vw,40px);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;gap:13px;align-items:center}.logo{width:46px;height:46px;border-radius:13px;background:#fff;color:#12304c;display:grid;place-items:center;font-weight:900;font-size:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:10px;color:#9dc7ef;font-weight:800}h1{font-size:clamp(22px,3vw,30px);margin:2px 0 0;letter-spacing:-.03em}header p{margin:4px 0 0;color:#c5d5e4}.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.upload,.syncbtn,.adminbtn{background:#fff;color:#17334f;border-radius:10px;padding:11px 15px;font-weight:750;cursor:pointer;border:0;display:inline-flex;align-items:center;gap:6px}.syncbtn{background:#0284c7;color:#fff}.adminbtn{background:#16a34a;color:#fff}.upload{position:relative;overflow:hidden}.upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}.hidden-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}.btn{border:1px solid #ffffff55;background:#ffffff12;color:white;padding:10px 13px;border-radius:10px;cursor:pointer}
+main{max-width:1500px;margin:auto;padding:22px clamp(12px,2.5vw,32px) 40px}
+#dashboardContent{display:none}
+.empty-state{background:var(--card);border:2px dashed var(--line);border-radius:16px;padding:60px 20px;text-align:center;max-width:600px;margin:60px auto}
+.empty-state h3{font-size:20px;margin:12px 0 6px;color:var(--navy)}
+.empty-state p{color:var(--muted);margin:0 0 20px}
+.filters{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr)) auto;gap:12px;background:var(--card);padding:16px;border:1px solid var(--line);border-radius:15px;box-shadow:0 3px 12px #203d5a08;margin-bottom:17px}
+label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}input,select,textarea{width:100%;min-width:0;border:1px solid #dbe3ee;background:#fff;padding:10px;border-radius:9px;color:var(--ink);font:inherit}.filterbtn{align-self:end;background:var(--navy);color:white;border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer}
+.sectionhead{display:flex;justify-content:space-between;gap:12px;align-items:end;margin:23px 0 12px;flex-wrap:wrap}.sectionhead h2{font-size:17px;margin:0;letter-spacing:-.02em}.sectionhead p{color:var(--muted);margin:3px 0 0;font-size:12px}.pill{border-radius:99px;padding:5px 9px;background:#e8f2ff;color:#2454a6;font-size:11px;font-weight:750}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.kpi,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 3px 12px #203d5a08}.kpi{padding:16px;min-height:118px;position:relative;overflow:hidden}.kpi:after{content:"";position:absolute;right:-20px;top:-25px;width:80px;height:80px;border-radius:50%;background:var(--tint,#eaf2ff)}.kpi .label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.kpi .value{font-size:clamp(22px,2.1vw,30px);font-weight:850;letter-spacing:-.04em;margin:8px 0 4px;position:relative;z-index:1}.kpi .sub{font-size:11px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}.panel{padding:17px;min-width:0}.panel h3{margin:0;font-size:14px}.charthead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.chartcount{font-size:11px;font-weight:800;color:#2454a6;background:#e8f2ff;border-radius:999px;padding:5px 9px;white-space:nowrap}.panel .desc{color:var(--muted);font-size:11px;margin:4px 0 13px}.chartbox{height:280px;position:relative}.chartbox.tall{height:340px}.chartbox.small{height:250px}.note{border:1px solid #f5d7a4;background:#fff9ed;color:#7a4b0b;border-radius:11px;padding:11px 13px;font-size:12px;margin-top:14px}
+.tablewrap{overflow:auto;height:440px;max-height:440px;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}th{position:sticky;top:0;background:#f2f6fb;color:#5b6b80;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;z-index:1}td,th{padding:10px 12px;border-bottom:1px solid var(--line)}tbody tr:hover{background:#f8fbff}.num{text-align:right;font-variant-numeric:tabular-nums}.empty{padding:25px;text-align:center;color:var(--muted)}.foot{color:var(--muted);font-size:11px;margin-top:15px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.update-badge{background:#10b98118;color:#047857;border:1px solid #10b98144;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+/* Modal de Supabase */
+.modal-overlay{position:fixed;inset:0;background:rgba(18,36,58,0.7);z-index:10000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:16px;max-width:700px;width:100%;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-header h3{margin:0;font-size:18px;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+@media(max-width:1150px){.kpis{grid-template-columns:repeat(3,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.chartbox{height:260px}.header-actions{width:100%}}
+
+body:not(.is-admin) .admin-only{display:none!important}
+#loginScreen{position:fixed;inset:0;z-index:30000;background:#102238;display:flex;align-items:center;justify-content:center;padding:20px}
+#loginScreen .box{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:inherit}
+#loginScreen h2{margin:0 0 4px;color:#102238;font-size:20px}
+#loginScreen p.sub{margin:0 0 18px;color:#64748b;font-size:13px}
+#loginScreen input{width:100%;box-sizing:border-box;padding:11px 12px;margin-bottom:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
+#loginScreen button{width:100%;padding:11px;border:none;border-radius:8px;background:#102238;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+#loginScreen button:disabled{opacity:.6;cursor:wait}
+#loginMsg{color:#dc2626;font-size:13px;min-height:18px;margin-bottom:8px}
+#userBox{display:none;align-items:center;gap:8px;font-size:12px;color:inherit}
+</style></head><body>
+<div id="loginScreen">
+  <div class="box">
+    <h2>📞 Dashboard de Call Center</h2>
+    <p class="sub">Acceso restringido. Inicia sesión para continuar.</p>
+    <input type="email" id="loginEmail" placeholder="Correo" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password">
+    <div id="loginMsg"></div>
+    <button type="button" id="loginBtn">Ingresar</button>
+  </div>
+</div>
+<div id="loadingScreen"><div class="loadicon">📞</div><h2 id="loadingTitle">Cargando dashboard WIN</h2><p id="loadingMsg">Procesando datos…</p></div>
+
+<!-- Modal para actualizar base de datos -->
+<div id="uploadModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚡ Actualizar datos desde archivo</h3>
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;">Sube un archivo Excel o pega directamente los datos copiados desde Excel para <b>reemplazar</b> completamente los datos actuales de la tabla.</p>
+    
+    <div style="margin-bottom:15px;">
+      <label>Opción A: Cargar Archivo Excel (.xlsx, .xls)</label>
+      <input type="file" id="modalFileInput" accept=".xlsx,.xls,.csv" style="margin-top:6px;">
+    </div>
+    
+    <div style="margin-bottom:15px;">
+      <label>Opción B: Pegar datos directos (Copiar desde Excel)</label>
+      <textarea id="pasteArea" rows="6" placeholder="Pega aquí las filas copiadas desde Excel con encabezados..."></textarea>
+    </div>
+    
+    <div style="display:flex;justify-content:end;gap:10px;">
+      <button class="btn" style="background:#64748b;border:none;" onclick="closeUploadModal()">Cancelar</button>
+      <button class="adminbtn" onclick="processAndUploadToSupabase()">🚀 Reemplazar datos en Supabase</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <div class="logo" aria-label="Gestión comercial">📞</div>
+    <div>
+      <div class="eyebrow">☎ Inteligencia comercial</div>
+      <h1>Dashboard de Call Center</h1>
+      <p>Rendimiento · Contactabilidad · Conversión · Tipificaciones</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <label class="upload">📁 Cargar Excel Local<input type="file" id="fileInput" accept=".xlsx,.xls,.csv"></label>
+    <button class="syncbtn" id="syncBtn">🔄 Ver información en línea</button>
+    <button class="adminbtn admin-only" onclick="openUploadModal()">⚡ Sincronizar datos</button>
+    <span id="userBox"><span id="userEmail"></span><button class="btn" type="button" id="logoutBtn">Cerrar sesión</button></span>
+    <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
+  </div>
+</header>
+<main>
+<div id="emptyState" class="empty-state">
+  <div style="font-size:48px">📊</div>
+  <h3>Sin datos cargados</h3>
+  <p>Selecciona una opción en la parte superior para comenzar:</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button class="upload" type="button" onclick="document.getElementById('fileInput2').click()">📁 Cargar archivo Excel Local</button>
+    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">🔄 Ver información en línea</button>
+    <input type="file" id="fileInput2" class="hidden-file" accept=".xlsx,.xls,.csv">
+  </div>
+</div>
+
+<div id="dashboardContent">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <span class="update-badge" id="lastUpdateLabel">🕒 Última actualización: --</span>
+  </div>
+  <div class="filters">
+    <div><label for="from">Fecha desde</label><input type="date" id="from"></div>
+    <div><label for="to">Fecha hasta</label><input type="date" id="to"></div>
+    <div><label for="agent">Agente</label><select id="agent"><option value="">Todos los agentes</option></select></div>
+    <div><label for="kind">Tipo de gestión</label><select id="kind"><option value="">Todos los tipos</option></select></div>
+    <div><label for="view">Universo de análisis</label><select id="view"><option value="all">Todas las gestiones</option><option value="human">Solo agentes humanos</option><option value="commercial">Gestiones comerciales (sin discador)</option><option value="contact">Solo contacto efectivo</option></select></div>
+    <button class="filterbtn" id="apply">Aplicar filtros</button>
+  </div>
+  <div class="sectionhead"><div><h2>Resumen ejecutivo</h2><p id="periodLabel">Periodo seleccionado</p></div><span class="pill" id="loadedLabel">Tabla Tipificaciones_WIN</span></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="sectionhead"><div><h2>Resultados comerciales y operativos</h2><p>Porcentajes calculados sobre universos explícitos</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>📊 Distribución de tipificaciones</h3><span class="chartcount" id="tipChartCount">0 registros</span></div><p class="desc">Principales conceptos finales; excluye categorías vacías</p><div class="chartbox tall"><canvas id="tipChart"></canvas></div></section>
+    <section class="panel"><div class="charthead"><h3>🎯 Embudo comercial</h3><span class="chartcount" id="funnelChartCount">0 registros</span></div><p class="desc">Registros por resultado; no representa necesariamente clientes únicos</p><div class="chartbox tall"><canvas id="funnelChart"></canvas></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Productividad y evolución</h2><p>Comparación entre agentes y tendencia diaria</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>👥 Top agentes por gestiones comerciales</h3><span class="chartcount" id="agentChartCount">0 gestiones</span></div><p class="desc">No incluye al usuario técnico del discador</p><div class="chartbox"><canvas id="agentChart"></canvas></div></section>
+    <section class="panel"><div class="charthead"><h3>📈 Evolución diaria</h3><span class="chartcount" id="trendChartCount">0 registros</span></div><p class="desc">Registros, contactos efectivos y ventas por fecha</p><div class="chartbox"><canvas id="trendChart"></canvas></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Motivos y ubicación de gestión</h2><p>Identifica barreras de contacto y distribución geográfica</p></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="charthead"><h3>🔎 Motivos frecuentes (Concepto4)</h3><span class="chartcount" id="reasonChartCount">0 registros</span></div><p class="desc">Top 10 del universo filtrado</p><div class="chartbox tall"><canvas id="reasonChart"></canvas></div></section>
+    <section class="panel"><div class="charthead"><h3>🗺️ Top Departamentos</h3><span class="chartcount" id="deptoChartCount">0 registros</span></div><p class="desc">Distribución por departamento del universo filtrado</p><div class="chartbox tall"><canvas id="deptoChart"></canvas></div></section>
+  </div>
+  <div class="sectionhead"><div><h2>Detalle de registros</h2><p>Información exacta de la tabla Tipificaciones_WIN</p></div><span class="pill" id="rowsLabel"></span></div>
+  <section class="panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input id="search" placeholder="Buscar en todas las columnas…" style="max-width:380px"><button class="filterbtn" id="exportAllBtn" style="align-self:auto">⬇ Exportar todas las columnas a Excel</button><span class="desc" id="detailCount" style="margin:0"></span><button class="filterbtn" id="prevPage" style="align-self:auto">← Anterior</button><span class="desc" id="pageLabel" style="margin:0">Página 1</span><button class="filterbtn" id="nextPage" style="align-self:auto">Siguiente →</button></div><div class="tablewrap" id="detailTable"></div></section>
+  <div class="note"><b>Nota metodológica:</b> un registro no equivale necesariamente a un cliente único. La tasa de contacto se calcula como Contacto Efectivo ÷ (Contacto Efectivo + Contacto No Efectivo + No contacto). La conversión usa Ventas tipificadas ÷ Contactos efectivos. Validar estos denominadores con la definición comercial oficial antes de usarlos como KPI contractual.</div>
+  <div class="foot"><span>WIN · Dashboard comercial de call center</span><span id="quality"></span></div>
+</div>
+</main>
+<script>
+Chart.register(ChartDataLabels);
+
+// Configuración de Supabase
+const SUPABASE_URL = "https://jxpeztieqwotfgswhzhx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4cGV6dGllcXdvdGZnc3doemh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzQ4MDQsImV4cCI6MjA4NjQxMDgwNH0.Hf-lbGlP2OmH7Uh2LNKqwHkwHDp7yQV6O73aXw5NCZk";
+// OJO: la libreria CDN ya define window.supabase. Declarar "const supabase" aqui provocaba
+// "Cannot access 'supabase' before initialization" y el script se detenia (ningun boton funcionaba).
+// Por eso el cliente se llama "sb".
+let sb = null;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (e) {
+  console.error("No se pudo iniciar Supabase:", e);
+}
+function requireSupabase() {
+  if (!sb) throw new Error("La libreria de Supabase no cargo (revisa tu conexion a internet) y recarga la pagina.");
+  return sb;
+}
+
+let allRows = [];
+let filteredRows = [];
+let originalColumns = [];
+let currentPage = 1;
+const pageSize = 50;
+
+let tipChartInstance = null;
+let funnelChartInstance = null;
+let agentChartInstance = null;
+let trendChartInstance = null;
+let reasonChartInstance = null;
+let deptoChartInstance = null;
+
+function showLoading(title, msg) {
+  document.getElementById('loadingTitle').innerText = title;
+  document.getElementById('loadingMsg').innerText = msg;
+  document.getElementById('loadingScreen').style.display = 'flex';
+}
+function hideLoading() {
+  document.getElementById('loadingScreen').style.display = 'none';
+}
+
+let isAdmin = false;
+function openUploadModal() { if (!isAdmin) return alert('Solo los administradores pueden cargar datos.'); document.getElementById('uploadModal').style.display = 'flex'; }
+function closeUploadModal() { document.getElementById('uploadModal').style.display = 'none'; }
+
+function updateLastUpdateLabel() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('lastUpdateLabel').innerText = `🕒 Última actualización: ${dateStr} ${timeStr}`;
+}
+
+function getFieldVal(row, fieldNames) {
+  if (!row) return "";
+  const keys = Object.keys(row);
+  for (let field of fieldNames) {
+    const target = field.trim().toLowerCase();
+    const foundKey = keys.find(k => k.trim().toLowerCase() === target);
+    if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+      return String(row[foundKey]).trim();
+    }
+  }
+  return "";
+}
+
+function parseFilterDate(val) {
+  if (!val) return "";
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+  
+  const sep = str.includes('/') ? '/' : (str.includes('-') ? '-' : null);
+  if (sep) {
+    const parts = str.split(sep);
+    if (parts.length === 3) {
+      const p0 = parts[0].trim();
+      const p1 = parts[1].trim();
+      const p2 = parts[2].trim().substring(0, 4);
+      if (p2.length === 4 && !isNaN(p2)) {
+        const day = p0.padStart(2, '0');
+        const month = p1.padStart(2, '0');
+        return `${p2}-${month}-${day}`;
+      }
+    }
+  }
+  return str;
+}
+
+function formatDisplayDate(val) {
+  if (!val) return "";
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const parts = str.substring(0, 10).split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return str;
+}
+
+function processLoadedData(rawRows, sheetName = "Tipificaciones_WIN") {
+  if (!rawRows || rawRows.length === 0) {
+    alert("No se encontraron registros en la fuente seleccionada.");
+    hideLoading();
+    return;
+  }
+  
+  // Filas tal cual se cargaron. Si vienen de Supabase con un campo JSON "datos_extra", se aplana.
+  allRows = rawRows.map(r => {
+    const o = { ...r };
+    if (o.datos_extra && typeof o.datos_extra === 'object') {
+      Object.keys(o.datos_extra).forEach(k => { if (!(k in o)) o[k] = o.datos_extra[k]; });
+    }
+    return o;
+  });
+  // Columnas en el mismo orden y con los mismos nombres del archivo original (se conservan espacios finales)
+  const colSet = new Set();
+  allRows.forEach(r => Object.keys(r).forEach(k => {
+    if (k !== 'id' && k !== 'created_at' && k !== 'datos_extra') colSet.add(k);
+  }));
+  originalColumns = [...colSet];
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  document.getElementById('exportBtn').style.display = 'inline-block';
+  document.getElementById('loadedLabel').innerText = sheetName;
+  
+  updateLastUpdateLabel();
+  initDashboardControls();
+  applyFilters();
+  hideLoading();
+}
+
+// LECTURA DESDE SUPABASE (pagina de 1000 en 1000: Supabase limita cada consulta a 1000 filas)
+async function syncGoogleSheet() {
+  showLoading("Sincronizando Informacion", "Obteniendo datos de la base de datos…");
+  try {
+    const client = requireSupabase();
+    const PAGE = 1000;
+    let from = 0;
+    let all = [];
+    while (true) {
+      const { data, error } = await client
+        .from('tipificaciones_win')
+        .select('*')
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      all = all.concat(data || []);
+      document.getElementById('loadingMsg').innerText = `Obteniendo datos… ${all.length} registros`;
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+    // Si la tabla guarda cada fila en la columna "datos", se usa tal cual (mismas columnas del Excel original)
+    const rows = all.map(r => (r.datos && typeof r.datos === 'object') ? { ...r.datos } : r);
+    processLoadedData(rows, "Tipificaciones_WIN (Supabase)");
+  } catch (err) {
+    hideLoading();
+    alert("Error al obtener datos desde Supabase: " + explainError(err));
+  }
+}
+
+function explainError(err) {
+  const msg = (err && (err.message || err.details)) || String(err);
+  if (/failed to fetch/i.test(msg)) {
+    return msg + "\n\nNo hubo respuesta del servidor: revisa tu conexion, que el proyecto de Supabase este activo y que la URL/clave sean correctas.";
+  }
+  return msg + (err && err.hint ? "\n" + err.hint : "");
+}
+
+document.getElementById('syncBtn').addEventListener('click', function() { syncGoogleSheet(); });
+
+// CARGA MASIVA Y REEMPLAZO EN SUPABASE
+async function processAndUploadToSupabase() {
+  const modalFile = document.getElementById('modalFileInput').files[0];
+  const pasteData = document.getElementById('pasteArea').value.trim();
+  let rowsToUpload = [];
+
+  if (modalFile) {
+    showLoading("Procesando Excel", "Estructurando archivo...");
+    try {
+      const dataArr = await modalFile.arrayBuffer();
+      const workbook = XLSX.read(dataArr, { type: 'array' });
+      const sName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
+      rowsToUpload = XLSX.utils.sheet_to_json(workbook.Sheets[sName], { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
+    } catch (err) {
+      hideLoading();
+      return alert("Error al leer el Excel: " + err.message);
+    }
+  } else if (pasteData) {
+    showLoading("Procesando texto", "Parseando filas pegadas...");
+    const lines = pasteData.split(/\r?\n/);
+    if (lines.length > 1) {
+      const headers = lines[0].split("\t").map(h => h.trim());
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const cols = lines[i].split("\t");
+        let obj = {};
+        headers.forEach((h, idx) => obj[h] = cols[idx] ? cols[idx].trim() : "");
+        rowsToUpload.push(obj);
+      }
+    }
+  } else {
+    return alert("Por favor selecciona un archivo Excel o pega el contenido en el recuadro.");
+  }
+
+  if (rowsToUpload.length === 0) {
+    hideLoading();
+    return alert("No se pudo extraer ningún registro válido.");
+  }
+
+  const CHUNK = 1000; // lotes pequenos: un solo envio grande supera el tiempo maximo de la consulta (statement timeout)
+  const total = rowsToUpload.length;
+  showLoading("Actualizando Supabase", `Subiendo ${total} filas…`);
+
+  try {
+    const client = requireSupabase();
+    for (let i = 0; i < total; i += CHUNK) {
+      const lote = rowsToUpload.slice(i, i + CHUNK);
+      // 1er lote: borra lo anterior e inserta; los demas solo agregan
+      const fn = i === 0 ? 'reemplazar_tipificaciones' : 'agregar_tipificaciones';
+      const { error } = await client.rpc(fn, { nuevos_datos: lote });
+      if (error) throw error;
+      document.getElementById('loadingMsg').innerText = `Subiendo… ${Math.min(i + CHUNK, total)} de ${total} filas`;
+    }
+
+    closeUploadModal();
+    document.getElementById('modalFileInput').value = '';
+    document.getElementById('pasteArea').value = '';
+    alert("¡Base de datos actualizada correctamente!");
+    syncGoogleSheet();
+  } catch (err) {
+    hideLoading();
+    alert("Error al actualizar Supabase: " + explainError(err));
+  }
+}
+
+function handleLocalFile(e) {
+  const input = e.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  showLoading("Procesando archivo Excel", "Leyendo hojas y estructurando información…");
+  const reader = new FileReader();
+  reader.onerror = function() {
+    hideLoading();
+    alert("No se pudo leer el archivo seleccionado.");
+    input.value = "";
+  };
+  reader.onload = function(evt) {
+    // setTimeout permite que se pinte la pantalla de carga antes del proceso pesado
+    setTimeout(function() {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array', raw: false, cellDates: false });
+        const sheetName = workbook.SheetNames.find(n => n.toLowerCase().includes("tipificac")) || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false, dateNF: "dd/mm/yyyy" });
+        processLoadedData(json, sheetName + " (archivo local)");
+      } catch (err) {
+        console.error(err);
+        hideLoading();
+        alert("Error al leer el archivo Excel: " + err.message);
+      } finally {
+        input.value = ""; // permite volver a elegir el mismo archivo
+      }
+    }, 50);
+  };
+  reader.readAsArrayBuffer(file);
+}
+document.getElementById('fileInput').addEventListener('change', handleLocalFile);
+document.getElementById('fileInput2').addEventListener('change', handleLocalFile);
+
+function initDashboardControls() {
+  const dates = allRows.map(r => parseFilterDate(getFieldVal(r, ["Fecha Llamada", "FECHA LLAMADA", "Fecha"]))).filter(Boolean).sort();
+  if (dates.length > 0) {
+    document.getElementById('from').value = dates[0];
+    document.getElementById('to').value = dates[dates.length - 1];
+  }
+  
+  const agents = [...new Set(allRows.map(r => getFieldVal(r, ["Nombre Agente", "NOMBRE AGENTE", "Agente"])).filter(Boolean))].sort();
+  const agentSel = document.getElementById('agent');
+  agentSel.innerHTML = '<option value="">Todos los agentes</option>';
+  agents.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = a;
+    agentSel.appendChild(opt);
+  });
+
+  const kinds = [...new Set(allRows.map(r => getFieldVal(r, ["Tipo", "TIPO"])).filter(Boolean))].sort();
+  const kindSel = document.getElementById('kind');
+  kindSel.innerHTML = '<option value="">Todos los tipos</option>';
+  kinds.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = k;
+    kindSel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const from = document.getElementById('from').value;
+  const to = document.getElementById('to').value;
+  const agent = document.getElementById('agent').value;
+  const kind = document.getElementById('kind').value;
+  const view = document.getElementById('view').value;
+
+  filteredRows = allRows.filter(r => {
+    const d = parseFilterDate(getFieldVal(r, ["Fecha Llamada", "FECHA LLAMADA", "Fecha"]));
+    if (from && d && d < from) return false;
+    if (to && d && d > to) return false;
+
+    const agNameVal = getFieldVal(r, ["Nombre Agente", "NOMBRE AGENTE", "Agente"]);
+    if (agent && agNameVal !== agent) return false;
+
+    const tipoVal = getFieldVal(r, ["Tipo", "TIPO"]);
+    if (kind && tipoVal !== kind) return false;
+    
+    const agNameLower = agNameVal.toLowerCase();
+    const isDisc = tipoVal.toLowerCase() === "discador" || agNameLower.includes("discador");
+    const conceptoVal = getFieldVal(r, ["Concepto", "CONCEPTO"]).toLowerCase();
+    const isContact = conceptoVal.includes("contacto efectivo");
+    
+    if (view === "human" && isDisc) return false;
+    if (view === "commercial" && isDisc) return false;
+    if (view === "contact" && !isContact) return false;
+    
+    return true;
+  });
+
+  document.getElementById('periodLabel').innerText = `Periodo: ${from || 'Inicio'} al ${to || 'Fin'}`;
+  currentPage = 1;
+  renderKPIs();
+  renderCharts();
+  renderDetailTable();
+}
+
+document.getElementById('apply').addEventListener('click', applyFilters);
+
+function renderKPIs() {
+  const total = filteredRows.length;
+  let ef = 0, noEf = 0, noCont = 0, disc = 0, ventas = 0;
+
+  filteredRows.forEach(r => {
+    const c = getFieldVal(r, ["Concepto", "CONCEPTO"]).toLowerCase();
+    const c2 = getFieldVal(r, ["Concepto2", "CONCEPTO2"]).toLowerCase();
+    const c4 = getFieldVal(r, ["Concepto4", "CONCEPTO4"]).toLowerCase();
+
+    if (c.includes("contacto efectivo")) ef++;
+    else if (c.includes("contacto no efectivo")) noEf++;
+    else if (c.includes("no contacto")) noCont++;
+    else if (c.includes("discador")) disc++;
+
+    if (c2.includes("venta") || c4.includes("venta")) ventas++;
+  });
+
+  const baseContact = ef + noEf + noCont;
+  const contactability = baseContact > 0 ? ((ef / baseContact) * 100).toFixed(1) : "0.0";
+  const conversion = ef > 0 ? ((ventas / ef) * 100).toFixed(1) : "0.0";
+
+  const container = document.getElementById('kpis');
+  container.innerHTML = `
+    <div class="kpi" style="--tint:#e8f2ff">
+      <div class="label">Total Gestiones</div>
+      <div class="value">${total.toLocaleString()}</div>
+      <div class="sub">Registros en el periodo</div>
+    </div>
+    <div class="kpi" style="--tint:#dcfce7">
+      <div class="label">Contacto Efectivo</div>
+      <div class="value" style="color:var(--green)">${ef.toLocaleString()}</div>
+      <div class="sub">${total > 0 ? ((ef/total)*100).toFixed(1) : 0}% del total</div>
+    </div>
+    <div class="kpi" style="--tint:#fef3c7">
+      <div class="label">Tasa Contactabilidad</div>
+      <div class="value" style="color:#d97706">${contactability}%</div>
+      <div class="sub">Efectivo / (Ef + NoEf + NoCont)</div>
+    </div>
+    <div class="kpi" style="--tint:#dbeafe">
+      <div class="label">Ventas Tipificadas</div>
+      <div class="value" style="color:var(--blue)">${ventas.toLocaleString()}</div>
+      <div class="sub">Cierres logrados</div>
+    </div>
+    <div class="kpi" style="--tint:#ccfbf1">
+      <div class="label">Tasa Conversión</div>
+      <div class="value" style="color:#0d9488">${conversion}%</div>
+      <div class="sub">Ventas / Contactos Efectivos</div>
+    </div>
+    <div class="kpi" style="--tint:#f1f5f9">
+      <div class="label">Gestiones Discador</div>
+      <div class="value" style="color:var(--muted)">${disc.toLocaleString()}</div>
+      <div class="sub">Barridos automáticos</div>
+    </div>
+  `;
+}
+
+function renderCharts() {
+  if (tipChartInstance) tipChartInstance.destroy();
+  if (funnelChartInstance) funnelChartInstance.destroy();
+  if (agentChartInstance) agentChartInstance.destroy();
+  if (trendChartInstance) trendChartInstance.destroy();
+  if (reasonChartInstance) reasonChartInstance.destroy();
+  if (deptoChartInstance) deptoChartInstance.destroy();
+
+  const barDatalabelsConfig = {
+    anchor: 'center',
+    align: 'center',
+    color: '#ffffff',
+    font: { weight: 'bold', size: 12 },
+    formatter: function(val) { return val > 0 ? val.toLocaleString() : ''; },
+    textStrokeColor: '#102238',
+    textStrokeWidth: 2
+  };
+
+  // 1. Gráfico de Dona
+  const tipCounts = {};
+  filteredRows.forEach(r => {
+    const val = getFieldVal(r, ["Concepto", "CONCEPTO"]);
+    if (val) tipCounts[val] = (tipCounts[val] || 0) + 1;
+  });
+  document.getElementById('tipChartCount').innerText = `${filteredRows.length} registros`;
+  tipChartInstance = new Chart(document.getElementById('tipChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(tipCounts),
+      datasets: [{ data: Object.values(tipCounts), backgroundColor: ['#2563eb', '#16a34a', '#ea580c', '#dc2626', '#0891b2', '#8b5cf6', '#64748b'] }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        datalabels: {
+          color: '#ffffff',
+          font: { weight: 'bold', size: 11 },
+          formatter: (val) => val > 0 ? val.toLocaleString() : '',
+          textStrokeColor: '#102238',
+          textStrokeWidth: 2
+        }
+      }
+    }
+  });
+
+  // 2. Embudo Comercial
+  let ef = 0, noEf = 0, noCont = 0, ventas = 0;
+  filteredRows.forEach(r => {
+    const c = getFieldVal(r, ["Concepto", "CONCEPTO"]).toLowerCase();
+    const c2 = getFieldVal(r, ["Concepto2", "CONCEPTO2"]).toLowerCase();
+    const c4 = getFieldVal(r, ["Concepto4", "CONCEPTO4"]).toLowerCase();
+    if (c.includes("contacto efectivo")) ef++;
+    else if (c.includes("contacto no efectivo")) noEf++;
+    else if (c.includes("no contacto")) noCont++;
+    if (c2.includes("venta") || c4.includes("venta")) ventas++;
+  });
+  document.getElementById('funnelChartCount').innerText = `${filteredRows.length} registros`;
+  funnelChartInstance = new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Total Gestiones', 'Contacto Efectivo', 'Ventas'],
+      datasets: [{ label: 'Volumen', data: [filteredRows.length, ef, ventas], backgroundColor: ['#12243a', '#0891b2', '#16a34a'] }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
+  });
+
+  // 3. Top Agentes
+  const agentCounts = {};
+  filteredRows.forEach(r => {
+    const ag = getFieldVal(r, ["Nombre Agente", "NOMBRE AGENTE", "Agente"]);
+    if (ag && !ag.toLowerCase().includes("discador")) {
+      agentCounts[ag] = (agentCounts[ag] || 0) + 1;
+    }
+  });
+  const sortedAgents = Object.entries(agentCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('agentChartCount').innerText = `${sortedAgents.reduce((s,a)=>s+a[1],0)} gestiones`;
+  agentChartInstance = new Chart(document.getElementById('agentChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedAgents.map(a => a[0]),
+      datasets: [{ label: 'Gestiones', data: sortedAgents.map(a => a[1]), backgroundColor: '#2563eb' }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: barDatalabelsConfig
+      }
+    }
+  });
+
+  // 4. Evolución Diaria
+  const trendMap = {};
+  filteredRows.forEach(r => {
+    const rawD = getFieldVal(r, ["Fecha Llamada", "FECHA LLAMADA", "Fecha"]);
+    const isoKey = parseFilterDate(rawD);
+    if (!isoKey) return;
+    
+    if (!trendMap[isoKey]) {
+      trendMap[isoKey] = { displayDate: formatDisplayDate(rawD), total: 0, ef: 0, ventas: 0 };
+    }
+    trendMap[isoKey].total++;
+    const c = getFieldVal(r, ["Concepto", "CONCEPTO"]).toLowerCase();
+    const c2 = getFieldVal(r, ["Concepto2", "CONCEPTO2"]).toLowerCase();
+    const c4 = getFieldVal(r, ["Concepto4", "CONCEPTO4"]).toLowerCase();
+    if (c.includes("contacto efectivo")) trendMap[isoKey].ef++;
+    if (c2.includes("venta") || c4.includes("venta")) trendMap[isoKey].ventas++;
+  });
+
+  const sortedIsoKeys = Object.keys(trendMap).sort();
+  const displayDates = sortedIsoKeys.map(k => trendMap[k].displayDate);
+
+  document.getElementById('trendChartCount').innerText = `${sortedIsoKeys.length} días`;
+  trendChartInstance = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: displayDates,
+      datasets: [
+        {
+          label: 'Total',
+          data: sortedIsoKeys.map(k => trendMap[k].total),
+          borderColor: '#12243a',
+          backgroundColor: '#12243a',
+          tension: 0.2,
+          datalabels: { align: 'top', anchor: 'end', offset: 4, color: '#12243a', font: { weight: 'bold', size: 10 } }
+        },
+        {
+          label: 'Contactos',
+          data: sortedIsoKeys.map(k => trendMap[k].ef),
+          borderColor: '#0891b2',
+          backgroundColor: '#0891b2',
+          tension: 0.2,
+          datalabels: { align: 'center', anchor: 'center', offset: 0, color: '#0891b2', font: { weight: 'bold', size: 10 }, textStrokeColor: '#ffffff', textStrokeWidth: 2 }
+        },
+        {
+          label: 'Ventas',
+          data: sortedIsoKeys.map(k => trendMap[k].ventas),
+          borderColor: '#16a34a',
+          backgroundColor: '#16a34a',
+          tension: 0.2,
+          datalabels: { align: 'bottom', anchor: 'start', offset: 4, color: '#16a34a', font: { weight: 'bold', size: 10 } }
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 20, bottom: 10 } },
+      scales: { x: { ticks: { maxRotation: 45, minRotation: 45 } } },
+      plugins: { datalabels: { clip: false, formatter: (val) => val > 0 ? val : '' } }
+    }
+  });
+
+  // 5. Motivos Frecuentes
+  const reasonCounts = {};
+  filteredRows.forEach(r => {
+    const val = getFieldVal(r, ["Concepto4", "CONCEPTO4"]);
+    if (val) reasonCounts[val] = (reasonCounts[val] || 0) + 1;
+  });
+  const sortedReasons = Object.entries(reasonCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('reasonChartCount').innerText = `${filteredRows.length} registros`;
+  reasonChartInstance = new Chart(document.getElementById('reasonChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedReasons.map(r => r[0]),
+      datasets: [{ label: 'Frecuencia', data: sortedReasons.map(r => r[1]), backgroundColor: '#ea580c' }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: barDatalabelsConfig }
+    }
+  });
+
+  // 6. Top Departamentos
+  const deptoCounts = {};
+  filteredRows.forEach(r => {
+    const val = getFieldVal(r, ["Departamento", "DEPARTAMENTO", "Depto"]);
+    if (val) deptoCounts[val] = (deptoCounts[val] || 0) + 1;
+  });
+  const sortedDeptos = Object.entries(deptoCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  document.getElementById('deptoChartCount').innerText = `${filteredRows.length} registros`;
+  deptoChartInstance = new Chart(document.getElementById('deptoChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedDeptos.map(d => d[0]),
+      datasets: [{ label: 'Registros', data: sortedDeptos.map(d => d[1]), backgroundColor: '#0891b2' }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: barDatalabelsConfig }
+    }
+  });
+}
+
+function escHtml(v) {
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Detalle de registros: muestra TODO lo que se cargó, con las mismas columnas y orden del archivo original.
+function renderDetailTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const searchFiltered = allRows.filter(r => {
+    if (!q) return true;
+    return originalColumns.some(c => String(r[c] === undefined || r[c] === null ? '' : r[c]).toLowerCase().includes(q));
+  });
+
+  document.getElementById('rowsLabel').innerText = `${searchFiltered.length} registros`;
+  document.getElementById('detailCount').innerText = `Mostrando ${searchFiltered.length} de ${allRows.length} registros cargados`;
+
+  const totalPages = Math.ceil(searchFiltered.length / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+  document.getElementById('pageLabel').innerText = `Página ${currentPage} de ${totalPages}`;
+
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = searchFiltered.slice(start, start + pageSize);
+
+  if (pageRows.length === 0) {
+    document.getElementById('detailTable').innerHTML = '<div class="empty">No se encontraron registros que coincidan con la búsqueda.</div>';
+    return;
+  }
+
+  let html = '<table><thead><tr>';
+  originalColumns.forEach(c => html += `<th>${escHtml(c)}</th>`);
+  html += '</tr></thead><tbody>';
+  pageRows.forEach(r => {
+    html += '<tr>';
+    originalColumns.forEach(c => html += `<td>${escHtml(r[c])}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('detailTable').innerHTML = html;
+}
+
+document.getElementById('search').addEventListener('input', () => { currentPage = 1; renderDetailTable(); });
+document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderDetailTable(); } });
+document.getElementById('nextPage').addEventListener('click', () => { currentPage++; renderDetailTable(); });
+
+function exportToExcel(rows, fileName) {
+  if (!rows || rows.length === 0) return alert("No hay datos para exportar.");
+  // Mismas columnas, mismo orden y mismos nombres que el archivo cargado
+  const data = rows.map(r => {
+    const o = {};
+    originalColumns.forEach(c => { o[c] = (r[c] === undefined || r[c] === null) ? "" : r[c]; });
+    return o;
+  });
+  const ws = XLSX.utils.json_to_sheet(data, { header: originalColumns });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tipificaciones_WIN");
+  XLSX.writeFile(wb, fileName);
+}
+
+// Superior: solo lo filtrado en el dashboard. Detalle: todo lo cargado.
+document.getElementById('exportBtn').addEventListener('click', () => exportToExcel(filteredRows, "Tipificaciones_WIN_Filtrados.xlsx"));
+document.getElementById('exportAllBtn').addEventListener('click', () => exportToExcel(allRows, "Tipificaciones_WIN_Original.xlsx"));
+
+// ===================== ACCESO (Supabase Auth) =====================
+// Los datos solo se leen con sesion iniciada (RLS en Supabase). Esta pantalla es la puerta de entrada;
+// la proteccion real esta en la base de datos (ver supabase_seguridad.sql).
+async function afterLogin(session) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('userEmail').innerText = session.user.email;
+  document.getElementById('userBox').style.display = 'inline-flex';
+  try {
+    const { data, error } = await requireSupabase().rpc('es_admin');
+    isAdmin = !error && data === true;
+  } catch (e) { isAdmin = false; }
+  document.body.classList.toggle('is-admin', isAdmin);
+  // Ya no se sincroniza solo: se muestra la pantalla de inicio con las opciones de cargar local o ver en línea.
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('loginBtn');
+  msg.innerText = '';
+  if (!email || !pass) { msg.innerText = 'Ingresa correo y contraseña.'; return; }
+  btn.disabled = true; btn.innerText = 'Validando…';
+  try {
+    const { data, error } = await requireSupabase().auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    document.getElementById('loginPass').value = '';
+    await afterLogin(data.session);
+  } catch (err) {
+    msg.innerText = /invalid login/i.test(err.message || '') ? 'Correo o contraseña incorrectos.' : (err.message || 'No se pudo iniciar sesión.');
+  } finally {
+    btn.disabled = false; btn.innerText = 'Ingresar';
+  }
+}
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try { await requireSupabase().auth.signOut(); } catch (e) {}
+  location.reload();
+});
+
+(async function initAuth() {
+  try {
+    const { data } = await requireSupabase().auth.getSession();
+    if (data && data.session) await afterLogin(data.session);
+  } catch (e) { console.error(e); }
+})();
+</script>
+</body>
+</html>
