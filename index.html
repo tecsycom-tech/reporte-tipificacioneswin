@@ -98,7 +98,7 @@ body:not(.is-admin) .admin-only{display:none!important}
   </div>
   <div class="header-actions">
     <label class="upload">📁 Cargar Excel Local<input type="file" id="fileInput" accept=".xlsx,.xls,.csv"></label>
-    <button class="syncbtn" id="syncBtn">🔄 Ver información en línea</button>
+    <button class="syncbtn" id="syncBtn">☁️ Ver información en línea</button>
     <button class="adminbtn admin-only" onclick="openUploadModal()">📤 Transferir datos al sistema</button>
     <span id="userBox"><span id="userEmail"></span><button class="btn" type="button" id="logoutBtn">Cerrar sesión</button></span>
     <button class="btn" id="exportBtn" style="display:none">Exportar datos filtrados</button>
@@ -111,7 +111,7 @@ body:not(.is-admin) .admin-only{display:none!important}
   <p>Selecciona una opción en la parte superior para comenzar:</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
     <button class="upload" type="button" onclick="document.getElementById('fileInput2').click()">📁 Cargar archivo Excel Local</button>
-    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">🔄 Ver información en línea</button>
+    <button class="syncbtn" type="button" onclick="syncGoogleSheet()">☁️ Ver información en línea</button>
     <input type="file" id="fileInput2" class="hidden-file" accept=".xlsx,.xls,.csv">
   </div>
 </div>
